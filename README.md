@@ -6,7 +6,7 @@
 
 ### Fully Automated PS5 Payload Execution via Home Assistant
 
-[![Version](https://img.shields.io/badge/version-1.1.2-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
+[![Version](https://img.shields.io/badge/version-1.1.3-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
 [![HA](https://img.shields.io/badge/Home%20Assistant-Add--on-41BDF5?style=flat-square&logo=home-assistant)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
@@ -89,7 +89,7 @@ Supported loaders:
 
 ## Features
 
-- Upload `.elf`, `.bin` and `.lua` payloads (including ZIP archives)
+- Upload `.elf`, `.bin` and `.lua` payloads — drag-and-drop or file picker, no GitHub URL required (`.bin` is routed to the ELF loader port 9021)
 - Visual Auto-Load Builder — Send / Delay / Wait-for-Port steps
 - Drag-and-drop step reordering
 - Per-flow notifications — loader ready, flow complete, timeout/failure via any `notify.*` service
@@ -126,7 +126,7 @@ Pin your most-used flows for instant one-tap execution.
 ---
 
 ### Payloads
-Upload, search, filter and send `.lua` and `.elf` payloads directly to your PS5.
+Upload, search, filter and send `.lua`, `.elf` and `.bin` payloads directly to your PS5 — local files via the **Add Payload** button, no GitHub URL needed.
 
 ![Payloads](docs/screenshots/payloads.png)
 
@@ -200,6 +200,8 @@ No `configuration.yaml` changes needed.
 
 ### Example Automation
 
+> ⚠️ **Integration required.** Before this automation works, the HA integration must be installed (see *Setup (one-time)* above). Without it, `ps5_autopayload.run_profile` does not exist and HA will report *"unknown action"*.
+
 Automatically run your payload chain when the PS5 powers on (via smart plug):
 
 ```yaml
@@ -225,8 +227,10 @@ action:
 
 ### Option 1 — Add-on Repository (Recommended)
 
-1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**
-2. Click **⋮ → Repositories**
+1. In Home Assistant, open the add-on store:
+   - **HA OS / Supervised:** **Settings → Add-ons → Add-on Store**
+   - **HA Core / newer HA UI:** **Settings → Apps → Install app** (bottom-right button)
+2. Open the **⋮** menu (top-right) → **Repositories**
 3. Add: `https://github.com/cosmicflow2512/PS5AutopayloadHA`
 4. Find **PS5 Autopayload** in the store and click **Install**
 5. Start the add-on and open the UI
@@ -357,5 +361,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <div align="center">
-  <sub>Built for Home Assistant · Tested on HA OS · v1.1.2</sub>
+  <sub>Built for Home Assistant · Tested on HA OS · v1.1.3</sub>
 </div>

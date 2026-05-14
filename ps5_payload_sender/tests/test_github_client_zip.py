@@ -91,7 +91,7 @@ def test_extract_caps_long_file_listing():
     assert "+12 more" in msg     # 20 entries - 8 shown = 12 hidden
 
 
-def test_payload_extensions_unchanged_by_this_pr():
-    """Sanity: this PR only improves the error message, it does NOT
-    expand the accepted extension set."""
-    assert _PAYLOAD_EXTENSIONS == {".elf", ".lua"}
+def test_payload_extensions_accepts_elf_lua_and_bin():
+    """The GitHub scanner accepts ELF, Lua, and BIN (etaHEN-style)
+    payloads — kept in sync with config.ALLOWED_PAYLOAD_EXTENSIONS."""
+    assert _PAYLOAD_EXTENSIONS == {".elf", ".lua", ".bin"}

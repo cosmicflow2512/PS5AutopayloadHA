@@ -29,7 +29,7 @@ OLD_STATE_FILE   = Path("/data/state.json")
 OLD_DEVICES_FILE = Path("/data/devices.json")
 
 # ── Misc ──────────────────────────────────────────────────────────
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.3"
 MAX_PAYLOAD_VERSIONS  = 5     # versions kept per payload
 MAX_TIMING_ENTRIES    = 10    # timing samples kept per port
 MAX_LOG_ENTRIES       = 500   # log entries kept in history
@@ -43,5 +43,5 @@ GITHUB_RAW_CONFIG = (
     "https://raw.githubusercontent.com/cosmicflow2512/PS5AutopayloadHA"
     "/main/ps5_payload_sender/config.yaml"
 )
-ALLOWED_PAYLOAD_EXTENSIONS: set[str] = {".lua", ".elf"}
+ALLOWED_PAYLOAD_EXTENSIONS: set[str] = {".lua", ".elf", ".bin"}
 HIDDEN_PROFILES: set[str] = {"ftp.txt", "goldhen.txt", "_builder_run.txt"}

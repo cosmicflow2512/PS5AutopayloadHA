@@ -21,9 +21,14 @@ class TestResolvePort:
     def test_extension_case_insensitive(self):
         assert resolve_port("exploit.LUA") == DEFAULT_LUA_PORT
         assert resolve_port("goldhen.ELF") == DEFAULT_ELF_PORT
+        assert resolve_port("etaHEN.BIN") == DEFAULT_ELF_PORT
+
+    def test_bin_routes_to_elf_port(self):
+        # .bin files (e.g. etaHEN) are renamed ELF payloads — same loader port
+        assert resolve_port("etaHEN.bin") == DEFAULT_ELF_PORT
 
     def test_unknown_extension_falls_back_to_elf(self):
-        assert resolve_port("mystery.bin") == DEFAULT_ELF_PORT
+        assert resolve_port("mystery.xyz") == DEFAULT_ELF_PORT
 
 
 class TestGetPayloadPath:
