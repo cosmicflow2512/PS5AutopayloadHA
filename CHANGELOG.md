@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [1.1.3] – 2026-05-14
+
+### `.bin` Payloads Supported
+
+- `.bin` files (e.g. etaHEN binaries) are now accepted by the local upload, the GitHub repo scanner, and the release-asset importer
+- Treated as ELF: routed to the ELF Loader port (9021) and shown with the ELF badge in the payload list
+- The ELF filter tab now matches both `.elf` and `.bin` files
+
+### Documentation
+
+- README: documented the alternative HAOS path (`Settings → Apps → Install app`) since newer HA versions no longer expose `Settings → Add-ons → Add-on Store`
+- README: added an explicit "integration required" warning above the example automation — without the HA integration, `ps5_autopayload.run_profile` returns *unknown action*
+- README: clarified that local files can be uploaded directly via the **Add Payload** button — no GitHub URL is required
+
 ## [1.1.2] – 2026-05-13
 
 ### P2JB-Compatible Flow Notifications

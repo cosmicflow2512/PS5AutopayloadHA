@@ -36,7 +36,7 @@ function getFilteredPayloads() {
   if (state.payloadFilter === 'favorites') {
     pool = pool.filter(p => state.payloadFavorites.includes(p.name));
   } else if (state.payloadFilter === 'elf') {
-    pool = pool.filter(p => p.ext === '.elf');
+    pool = pool.filter(p => p.ext === '.elf' || p.ext === '.bin');
   } else if (state.payloadFilter === 'lua') {
     pool = pool.filter(p => p.ext === '.lua');
   }

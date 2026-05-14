@@ -52,7 +52,7 @@ def setup_storage() -> None:
             if not f.is_file():
                 continue
             ext = f.suffix.lower()
-            if ext in {".lua", ".elf"}:
+            if ext in ALLOWED_PAYLOAD_EXTENSIONS:
                 dest = PAYLOAD_DIR / f.name
             elif ext == ".txt":
                 dest = PROFILES_DIR / f.name

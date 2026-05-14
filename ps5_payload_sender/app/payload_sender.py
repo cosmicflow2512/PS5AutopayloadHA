@@ -20,8 +20,8 @@ def resolve_port(filename: str, port: Optional[int] = None) -> int:
 
     If port is explicitly given, use it.
     Otherwise derive from file extension:
-      .lua  -> DEFAULT_LUA_PORT (9026)
-      .elf  -> DEFAULT_ELF_PORT (9021)
+      .lua         -> DEFAULT_LUA_PORT (9026)
+      .elf / .bin  -> DEFAULT_ELF_PORT (9021)
     Defaults to DEFAULT_ELF_PORT for unknown extensions.
     """
     if port is not None:

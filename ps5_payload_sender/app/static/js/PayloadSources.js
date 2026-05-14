@@ -328,7 +328,7 @@ async function addSource() {
     }
   } catch (e) {
     const txt = e.message.includes('404')
-      ? 'No .elf/.lua payload files found. ZIP-only releases are not supported.'
+      ? 'No .elf/.lua/.bin payload files found. ZIP-only releases are not supported.'
       : e.message.includes('400')
         ? 'Invalid format — use owner/repo (e.g. ps5-payload-dev/kstuff)'
         : 'Error: ' + e.message;
