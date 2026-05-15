@@ -144,46 +144,36 @@ def write_ha_services_yaml() -> None:
 # ── Reload integration ────────────────────────────────────────────
 
 def reload_integration() -> dict:
-    """Find the ps5_autopayload config entry and reload it (blocking)."""
+    """Ask the HA integration to refresh its run_profile flow list.
+
+    The current flow names are pushed *inside* the service call so the
+    integration handler does not have to call back to the add-on. A
+    callback round-trip (add-on → HA → add-on) made the blocking REST
+    service call exceed its timeout and return 502, so the dropdown
+    never updated. With the list in the payload the service completes
+    instantly.
+    """
     if not SUPERVISOR_TOKEN:
         return {"success": False, "error": "No SUPERVISOR_TOKEN"}
+    profiles: list[str] = []
     try:
-        req = urllib.request.Request(
-            "http://supervisor/core/api/config/config_entries/entries",
-            headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}"},
-            method="GET",
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            entries = json.loads(resp.read().decode())
-
-        entry = next((e for e in entries if e.get("domain") == "ps5_autopayload"), None)
-        if not entry:
-            return {"success": False, "error": "Integration not set up in HA – add it first"}
-
-        entry_id = entry["entry_id"]
-        data = json.dumps({"entry_id": entry_id}).encode()
-        req2 = urllib.request.Request(
-            "http://supervisor/core/api/services/homeassistant/reload_config_entry",
-            data=data,
-            headers={
-                "Authorization": f"Bearer {SUPERVISOR_TOKEN}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req2, timeout=10):
-            pass
-
-        _log.info("HA integration reloaded (entry_id=%s)", entry_id)
-        return {"success": True, "entry_id": entry_id}
-
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode(errors="replace")[:200]
-        _log.error("HA reload HTTP %s: %s | %s", exc.code, exc.reason, body)
-        return {"success": False, "error": f"HTTP {exc.code}: {exc.reason}"}
+        if PROFILES_DIR.exists():
+            profiles = sorted(
+                f.name[:-4]
+                for f in PROFILES_DIR.iterdir()
+                if f.is_file()
+                and f.suffix.lower() == ".txt"
+                and f.name not in HIDDEN_PROFILES
+            )
     except Exception as exc:
-        _log.error("HA reload error: %s", exc)
-        return {"success": False, "error": str(exc)}
+        _log.warning("reload_integration: could not list profiles: %s", exc)
+    ok = _call_ha_service(
+        "ps5_autopayload", "reload_profiles", {"profiles": profiles}
+    )
+    if ok:
+        _log.info("HA flow list pushed to integration (%d flows)", len(profiles))
+        return {"success": True}
+    return {"success": False, "error": "reload_profiles service call failed"}
 
 
 # ── Notifications ──────────────────────────────────────────────────

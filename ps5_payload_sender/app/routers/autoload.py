@@ -31,7 +31,7 @@ from exec_engine import (
     run_autoload,
     set_exec_state,
 )
-from ha_client import write_ha_services_yaml
+from ha_client import reload_integration, write_ha_services_yaml
 from models import AutoloadRequest, PatchFlowVersionsRequest, SaveProfileRequest
 from payload_sender import resolve_port
 from storage import list_profiles
@@ -62,6 +62,7 @@ async def api_save_profile(req: SaveProfileRequest):
     await manager.status(f"Profile '{safe}' saved", level="success")
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(executor, write_ha_services_yaml)
+    loop.run_in_executor(executor, reload_integration)
     return {"success": True}
 
 
@@ -73,6 +74,7 @@ async def api_delete_profile(profile: str):
     p.unlink()
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(executor, write_ha_services_yaml)
+    loop.run_in_executor(executor, reload_integration)
     return {"success": True}
 
 

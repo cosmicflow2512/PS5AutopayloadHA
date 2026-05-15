@@ -2,6 +2,55 @@
 
 ## [Unreleased]
 
+## [1.1.8] – 2026-05-15
+
+### Dropdown Refresh: Timeout/502 Fixed (log-confirmed)
+
+The 1.1.7 service call worked (no more 404), but the add-on log then showed `reload_profiles error: timed out` / `HTTP 502` on every save. Cause: the blocking REST service call waited for the integration handler, which called *back* to the add-on (`_get /api/autoload/profiles`) to fetch the flow list — that round-trip exceeded the request timeout.
+
+- The add-on now **pushes the flow list inside the service payload** (`reload_profiles: {profiles: [...]}`). The integration reads it from `call.data` and never calls back, so the service completes instantly — no timeout, no 502.
+- Integration base URLs reordered (`172.30.32.1` before `localhost`) since `localhost` never reaches the add-on from the HA Core container, only added latency.
+
+## [1.1.7] – 2026-05-15
+
+### The Actual Root Cause (log-confirmed)
+
+The add-on log revealed `HA reload HTTP 404: Not Found` on **every** flow save. `reload_integration()` was calling `GET /core/api/config/config_entries/entries` — a REST path that **does not exist** in HA Core (config entries are WebSocket-only). The entire dropdown-refresh chain died at step 1 every time; nothing in 1.1.5/1.1.6 could ever run. The dropdown only updated on a full HA Core restart.
+
+- The add-on now calls the integration's own `ps5_autopayload.reload_profiles` service via `POST /core/api/services/<domain>/<service>` — the exact endpoint already proven to work for notifications. No more 404.
+- The integration's `reload_profiles` handler now rebuilds the selector **directly**: it fetches the live flow list, removes + re-registers `run_profile` (which fires the service events the HA frontend listens to, forcing a description refetch), then applies the new options via `async_set_service_schema`.
+- Net result: saving/deleting a flow updates the automation dropdown within ~1–2 s, no Core restart.
+
+### "Restart Required" Repair Notice
+
+- The add-on's old restart notification was sent at add-on start-up, before HA Core is ready — it returned `502 Bad Gateway` and was silently lost, so the prompt to restart often never appeared.
+- The integration now compares the running add-on version against the integration version HA actually has loaded. On a mismatch it raises a **HA Repairs issue** ("Restart Home Assistant to finish updating PS5 Autopayload") — the same mechanism other integrations use: it shows as a badge on Settings and a card under Settings → System → Repairs. Once the versions match again (after the restart) the issue clears itself automatically. The check runs inside HA, so it is always delivered.
+
+## [1.1.6] – 2026-05-15
+
+### Flow Dropdown Actually Updates Now
+
+- **Root cause fix**: HA caches `services.yaml` descriptions and does *not* re-read them on `reload_config_entry`, so the v1.1.5 auto-refresh never reached the dropdown. The `run_profile` flow list is now set at runtime via `async_set_service_schema`, pulling the live flow list directly from the add-on — this is the only mechanism HA honors without a full Core restart.
+- The selector is rebuilt on every integration reload (triggered automatically when a flow is saved or deleted), so the automation editor always shows the current flows.
+
+## [1.1.5] – 2026-05-15
+
+### HA Integration — Robustness & Auto-Refresh
+
+- **Flow dropdown auto-updates**: the `profile_name` selector in HA automations now refreshes automatically whenever a flow is saved or deleted — no more manual `reload_profiles` call required
+- **Integration survives add-on updates**: services (`run_profile`, `stop`, `pause`, `resume`) are now registered in `async_setup` instead of only `async_setup_entry`, so they remain available even if the config entry fails to reload after a version bump
+- **Startup sync**: on add-on startup the integration is reloaded automatically to ensure HA's service list reflects the current flow library
+
+## [1.1.4] – 2026-05-15
+
+### Multi-Architecture Docker Support
+
+- Switched to the multi-arch `ghcr.io/home-assistant/base-python:3.12-alpine3.23` base image — a single image now covers both `amd64` and `aarch64` (ARM64), so the add-on builds correctly on Raspberry Pi, ODROID, and other ARM64 boards
+- Removed the manual `apk add python3 py3-pip` step (Python 3.12 is pre-installed in `base-python`), reducing build time
+- Removed the deprecated `build.yaml` — base image is now defined directly in the Dockerfile, per current HA add-on guidance
+- Dropped the deprecated `armv7`, `armhf`, and `i386` architectures from `config.yaml` (no longer supported by the modern HA base images); supported architectures are now `aarch64` and `amd64`
+- Fixes build failure on ARM platforms reported in [#42](https://github.com/cosmicflow2512/PS5AutopayloadHA/issues/42)
+
 ## [1.1.3] – 2026-05-14
 
 ### `.bin` Payloads Supported

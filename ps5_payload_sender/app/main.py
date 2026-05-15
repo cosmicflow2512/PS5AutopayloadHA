@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 import payload_sender as _ps_module
 from config import APP_VERSION, PAYLOAD_DIR, STATIC_DIR
 from exec_engine import ExecState, executor
-from ha_client import push_ha_state, write_ha_services_yaml
+from ha_client import push_ha_state, reload_integration, write_ha_services_yaml
 from routers import (
     autoload,
     backup,
@@ -101,6 +101,7 @@ async def _on_startup() -> None:
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(executor, push_ha_state, ExecState.IDLE)
     await loop.run_in_executor(executor, write_ha_services_yaml)
+    loop.run_in_executor(executor, reload_integration)
     _log.info("Startup complete")
 
 
