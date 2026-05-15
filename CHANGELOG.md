@@ -6,9 +6,11 @@
 
 ### Multi-Architecture Docker Support
 
-- Added `build.yaml` mapping each supported architecture to its `base-python:3.12` base image — HA Supervisor now correctly resolves the right image for `aarch64`, `amd64`, `armv7`, `armhf`, and `i386`
-- Dockerfile updated to use `base-python` (Python 3.12 pre-installed) — removes the manual `apk add python3 py3-pip` step and reduces image build time
-- Fixes build failure on ARM platforms (Raspberry Pi, ODROID, etc.) reported in [#42](https://github.com/cosmicflow2512/PS5AutopayloadHA/issues/42)
+- Switched to the multi-arch `ghcr.io/home-assistant/base-python:3.12-alpine3.23` base image — a single image now covers both `amd64` and `aarch64` (ARM64), so the add-on builds correctly on Raspberry Pi, ODROID, and other ARM64 boards
+- Removed the manual `apk add python3 py3-pip` step (Python 3.12 is pre-installed in `base-python`), reducing build time
+- Removed the deprecated `build.yaml` — base image is now defined directly in the Dockerfile, per current HA add-on guidance
+- Dropped the deprecated `armv7`, `armhf`, and `i386` architectures from `config.yaml` (no longer supported by the modern HA base images); supported architectures are now `aarch64` and `amd64`
+- Fixes build failure on ARM platforms reported in [#42](https://github.com/cosmicflow2512/PS5AutopayloadHA/issues/42)
 
 ## [1.1.3] – 2026-05-14
 
