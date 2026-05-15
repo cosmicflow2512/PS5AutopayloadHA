@@ -28,6 +28,7 @@ _INIT_PY = (
     'from homeassistant.config_entries import ConfigEntry\n'
     'from homeassistant.core import HomeAssistant, ServiceCall\n'
     'import homeassistant.helpers.config_validation as cv\n'
+    'from homeassistant.helpers import issue_registry as ir\n'
     '\n'
     '_LOGGER = logging.getLogger(__name__)\n'
     'DOMAIN = "ps5_autopayload"\n'
@@ -95,30 +96,26 @@ _INIT_PY = (
     '        await _refresh_run_profile_schema(_HASS)\n'
     '\n'
     'async def _version_guard(hass: HomeAssistant) -> None:\n'
-    '    """Show a persistent "restart required" notice when the add-on has\n'
+    '    """Raise a HA Repairs issue ("Restart required") when the add-on has\n'
     '    been updated to a newer version than the integration HA currently\n'
-    '    has loaded; dismiss it once they match again (after a restart).\n'
-    '    Runs inside HA (always reachable), unlike the add-on start-up\n'
-    '    notification which races HA boot and is lost to 502s."""\n'
+    '    has loaded; clear it once they match again after the restart. This\n'
+    '    is the same mechanism other integrations use - it shows as a badge\n'
+    '    under Settings and a card in Settings > System > Repairs."""\n'
     '    try:\n'
     '        info = await _get("/api/version")\n'
     '        addon = (info or {}).get("version")\n'
     '        if addon and addon != _VERSION:\n'
-    '            await hass.services.async_call(\n'
-    '                "persistent_notification", "create",\n'
-    '                {"title": "PS5 Autopayload",\n'
-    '                 "message": ("Add-on updated to " + str(addon) + " but "\n'
-    '                 "Home Assistant still runs integration " + _VERSION + ". "\n'
-    '                 "Restart Home Assistant to finish the update."),\n'
-    '                 "notification_id": "ps5_autopayload_restart"},\n'
-    '                blocking=False,\n'
+    '            ir.async_create_issue(\n'
+    '                hass, DOMAIN, "restart_required",\n'
+    '                is_fixable=False,\n'
+    '                severity=ir.IssueSeverity.WARNING,\n'
+    '                translation_key="restart_required",\n'
+    '                translation_placeholders={\n'
+    '                    "addon": str(addon), "loaded": _VERSION,\n'
+    '                },\n'
     '            )\n'
     '        else:\n'
-    '            await hass.services.async_call(\n'
-    '                "persistent_notification", "dismiss",\n'
-    '                {"notification_id": "ps5_autopayload_restart"},\n'
-    '                blocking=False,\n'
-    '            )\n'
+    '            ir.async_delete_issue(hass, DOMAIN, "restart_required")\n'
     '    except Exception as exc:\n'
     '        _LOGGER.debug("PS5 Autopayload: version guard skipped - %s", exc)\n'
     '\n'
@@ -230,7 +227,18 @@ _STRINGS_EN = {
             }
         },
         "abort": {"already_configured": "PS5 Autopayload is already configured."},
-    }
+    },
+    "issues": {
+        "restart_required": {
+            "title": "Restart Home Assistant to finish updating PS5 Autopayload",
+            "description": (
+                "The PS5 Autopayload add-on was updated to {addon}, but Home "
+                "Assistant still has the {loaded} integration loaded. Restart "
+                "Home Assistant (Settings → System → Restart) to finish "
+                "the update. This notice clears itself afterwards."
+            ),
+        }
+    },
 }
 
 _STRINGS_DE = {
@@ -245,7 +253,19 @@ _STRINGS_DE = {
             }
         },
         "abort": {"already_configured": "PS5 Autopayload ist bereits konfiguriert."},
-    }
+    },
+    "issues": {
+        "restart_required": {
+            "title": "Home Assistant neu starten, um PS5-Autopayload-Update abzuschließen",
+            "description": (
+                "Das PS5 Autopayload Add-on wurde auf {addon} aktualisiert, "
+                "aber Home Assistant hat noch die Integration {loaded} "
+                "geladen. Starte Home Assistant neu (Einstellungen → System "
+                "→ Neu starten), um das Update abzuschließen. Dieser Hinweis "
+                "verschwindet danach von selbst."
+            ),
+        }
+    },
 }
 
 _SERVICES_YAML = (
