@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.1.7] – 2026-05-15
+
+### The Actual Root Cause (log-confirmed)
+
+The add-on log revealed `HA reload HTTP 404: Not Found` on **every** flow save. `reload_integration()` was calling `GET /core/api/config/config_entries/entries` — a REST path that **does not exist** in HA Core (config entries are WebSocket-only). The entire dropdown-refresh chain died at step 1 every time; nothing in 1.1.5/1.1.6 could ever run. The dropdown only updated on a full HA Core restart.
+
+- The add-on now calls the integration's own `ps5_autopayload.reload_profiles` service via `POST /core/api/services/<domain>/<service>` — the exact endpoint already proven to work for notifications. No more 404.
+- The integration's `reload_profiles` handler now rebuilds the selector **directly**: it fetches the live flow list, removes + re-registers `run_profile` (which fires the service events the HA frontend listens to, forcing a description refetch), then applies the new options via `async_set_service_schema`.
+- Net result: saving/deleting a flow updates the automation dropdown within ~1–2 s, no Core restart.
+
 ## [1.1.6] – 2026-05-15
 
 ### Flow Dropdown Actually Updates Now

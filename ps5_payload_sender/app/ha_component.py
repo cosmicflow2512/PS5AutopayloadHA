@@ -20,7 +20,7 @@ _CC_DIR = Path("/config/custom_components/ps5_autopayload")
 
 # ── __init__.py source (embedded as a string) ─────────────────────
 _INIT_PY = (
-    '"""PS5 Autopayload \u2013 auto-generated HA integration (v' + APP_VERSION + ')."""\n'
+    '"""PS5 Autopayload – auto-generated HA integration (v' + APP_VERSION + ')."""\n'
     'from __future__ import annotations\n'
     'import logging\n'
     'import aiohttp\n'
@@ -32,6 +32,12 @@ _INIT_PY = (
     '_LOGGER = logging.getLogger(__name__)\n'
     'DOMAIN = "ps5_autopayload"\n'
     '_ADDON_BASES = ["http://localhost:8765", "http://172.30.32.1:8765"]\n'
+    '_HASS = None\n'
+    '\n'
+    '_RUN_PROFILE_VOL = vol.Schema({\n'
+    '    vol.Required("profile_name"): cv.string,\n'
+    '    vol.Optional("host", default=""): cv.string,\n'
+    '})\n'
     '\n'
     'async def _call(path: str, data: dict | None = None) -> dict:\n'
     '    for base in _ADDON_BASES:\n'
@@ -59,60 +65,42 @@ _INIT_PY = (
     '            continue\n'
     '    return {}\n'
     '\n'
-    'def _register_services(hass: HomeAssistant) -> None:\n'
-    '    """Register all PS5 Autopayload HA services (idempotent)."""\n'
-    '    if hass.services.has_service(DOMAIN, "run_profile"):\n'
+    'async def _run_profile(call: ServiceCall) -> None:\n'
+    '    profile = call.data["profile_name"].strip()\n'
+    '    if not profile.lower().endswith(".txt"):\n'
+    '        profile += ".txt"\n'
+    '    host = call.data.get("host", "")\n'
+    '    if not host:\n'
+    '        cfg = await _get("/api/config")\n'
+    '        host = cfg.get("ps5_ip", "")\n'
+    '    if not host:\n'
+    '        _LOGGER.error("PS5 Autopayload: no PS5 IP configured")\n'
     '        return\n'
+    '    await _call("/api/autoload/run", {\n'
+    '        "host": host, "profile": profile, "continue_on_error": False,\n'
+    '    })\n'
     '\n'
-    '    async def run_profile(call: ServiceCall) -> None:\n'
-    '        profile = call.data["profile_name"].strip()\n'
-    '        if not profile.lower().endswith(".txt"):\n'
-    '            profile += ".txt"\n'
-    '        host = call.data.get("host", "")\n'
-    '        if not host:\n'
-    '            cfg = await _get("/api/config")\n'
-    '            host = cfg.get("ps5_ip", "")\n'
-    '        if not host:\n'
-    '            _LOGGER.error("PS5 Autopayload: no PS5 IP configured")\n'
-    '            return\n'
-    '        await _call("/api/autoload/run", {\n'
-    '            "host": host, "profile": profile, "continue_on_error": False,\n'
-    '        })\n'
+    'async def _stop(call: ServiceCall) -> None:\n'
+    '    await _call("/api/autoload/stop")\n'
     '\n'
-    '    async def stop(call: ServiceCall) -> None:\n'
-    '        await _call("/api/autoload/stop")\n'
+    'async def _pause(call: ServiceCall) -> None:\n'
+    '    await _call("/api/autoload/pause")\n'
     '\n'
-    '    async def pause(call: ServiceCall) -> None:\n'
-    '        await _call("/api/autoload/pause")\n'
+    'async def _resume(call: ServiceCall) -> None:\n'
+    '    await _call("/api/autoload/resume")\n'
     '\n'
-    '    async def resume(call: ServiceCall) -> None:\n'
-    '        await _call("/api/autoload/resume")\n'
-    '\n'
-    '    async def reload_profiles(call: ServiceCall) -> None:\n'
-    '        result = await _call("/api/ha/reload-integration")\n'
-    '        if result.get("success"):\n'
-    '            _LOGGER.info("PS5 Autopayload: integration reloaded with fresh profiles")\n'
-    '        else:\n'
-    '            _LOGGER.warning("PS5 Autopayload: reload failed \u2013 %s", result.get("error"))\n'
-    '\n'
-    '    hass.services.async_register(\n'
-    '        DOMAIN, "run_profile", run_profile,\n'
-    '        schema=vol.Schema({\n'
-    '            vol.Required("profile_name"): cv.string,\n'
-    '            vol.Optional("host", default=""): cv.string,\n'
-    '        }),\n'
-    '    )\n'
-    '    hass.services.async_register(DOMAIN, "stop",            stop)\n'
-    '    hass.services.async_register(DOMAIN, "pause",           pause)\n'
-    '    hass.services.async_register(DOMAIN, "resume",          resume)\n'
-    '    hass.services.async_register(DOMAIN, "reload_profiles", reload_profiles)\n'
-    '    _LOGGER.info("PS5 Autopayload services registered (v' + APP_VERSION + ')")\n'
+    'async def _reload_profiles(call: ServiceCall) -> None:\n'
+    '    if _HASS is not None:\n'
+    '        await _refresh_run_profile_schema(_HASS)\n'
     '\n'
     'async def _refresh_run_profile_schema(hass: HomeAssistant) -> None:\n'
-    '    """Pull the live flow list from the add-on and set the run_profile\n'
-    '    selector at runtime. HA caches services.yaml descriptions and does\n'
-    '    NOT re-read them on reload_config_entry, so the dropdown is driven\n'
-    '    by async_set_service_schema instead."""\n'
+    '    """Rebuild the run_profile selector from the live add-on flow list.\n'
+    '\n'
+    '    HA does not re-read services.yaml at runtime. Removing then\n'
+    '    re-registering the service fires the service-registered events the\n'
+    '    HA frontend listens to, so the automation editor refetches service\n'
+    '    descriptions; async_set_service_schema then supplies the fresh\n'
+    '    options. Only path that updates the dropdown without a Core restart."""\n'
     '    data = await _get("/api/autoload/profiles")\n'
     '    raw = data.get("profiles", []) or []\n'
     '    opts = []\n'
@@ -123,6 +111,11 @@ _INIT_PY = (
     '    pn_sel = (\n'
     '        {"select": {"custom_value": True, "sort": True, "options": opts}}\n'
     '        if opts else {"text": {}}\n'
+    '    )\n'
+    '    if hass.services.has_service(DOMAIN, "run_profile"):\n'
+    '        hass.services.async_remove(DOMAIN, "run_profile")\n'
+    '    hass.services.async_register(\n'
+    '        DOMAIN, "run_profile", _run_profile, schema=_RUN_PROFILE_VOL,\n'
     '    )\n'
     '    try:\n'
     '        hass.services.async_set_service_schema(DOMAIN, "run_profile", {\n'
@@ -143,16 +136,33 @@ _INIT_PY = (
     '                },\n'
     '            },\n'
     '        })\n'
-    '        _LOGGER.info("PS5 Autopayload: run_profile schema refreshed (%d flows)", len(opts))\n'
     '    except Exception as exc:\n'
-    '        _LOGGER.warning("PS5 Autopayload: schema refresh failed – %s", exc)\n'
+    '        _LOGGER.warning("PS5 Autopayload: schema set failed - %s", exc)\n'
+    '    _LOGGER.info("PS5 Autopayload: run_profile refreshed (%d flows)", len(opts))\n'
+    '\n'
+    'def _register_services(hass: HomeAssistant) -> None:\n'
+    '    """Register all services (idempotent; survives add-on updates)."""\n'
+    '    if not hass.services.has_service(DOMAIN, "run_profile"):\n'
+    '        hass.services.async_register(\n'
+    '            DOMAIN, "run_profile", _run_profile, schema=_RUN_PROFILE_VOL,\n'
+    '        )\n'
+    '    if not hass.services.has_service(DOMAIN, "stop"):\n'
+    '        hass.services.async_register(DOMAIN, "stop",            _stop)\n'
+    '        hass.services.async_register(DOMAIN, "pause",           _pause)\n'
+    '        hass.services.async_register(DOMAIN, "resume",          _resume)\n'
+    '        hass.services.async_register(DOMAIN, "reload_profiles", _reload_profiles)\n'
+    '    _LOGGER.info("PS5 Autopayload services registered (v' + APP_VERSION + ')")\n'
     '\n'
     'async def async_setup(hass: HomeAssistant, config: dict) -> bool:\n'
+    '    global _HASS\n'
+    '    _HASS = hass\n'
     '    _register_services(hass)\n'
     '    hass.async_create_task(_refresh_run_profile_schema(hass))\n'
     '    return True\n'
     '\n'
     'async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:\n'
+    '    global _HASS\n'
+    '    _HASS = hass\n'
     '    _register_services(hass)\n'
     '    await _refresh_run_profile_schema(hass)\n'
     '    return True\n'
@@ -162,7 +172,7 @@ _INIT_PY = (
 )
 
 _CONFIG_FLOW_PY = (
-    '"""Config flow for PS5 Autopayload \u2013 adds integration via HA GUI."""\n'
+    '"""Config flow for PS5 Autopayload – adds integration via HA GUI."""\n'
     'from homeassistant import config_entries\n'
     '\n'
     'DOMAIN = "ps5_autopayload"\n'
@@ -200,7 +210,7 @@ _STRINGS_DE = {
                 "title": "PS5 Autopayload",
                 "description": (
                     "Verbindet sich mit dem PS5 Autopayload Add-on auf diesem "
-                    "Home Assistant. Stelle sicher, dass das Add-on l\u00e4uft."
+                    "Home Assistant. Stelle sicher, dass das Add-on läuft."
                 ),
             }
         },
@@ -290,7 +300,7 @@ def write_custom_component() -> None:
     (_CC_DIR / "services.yaml").write_text(_SERVICES_YAML, encoding="utf-8")
 
     _log.info(
-        "Custom component written (v%s) \u2013 %s install",
+        "Custom component written (v%s) – %s install",
         APP_VERSION,
         "first" if first_install else "update",
     )
@@ -304,14 +314,14 @@ def _send_ha_notification(first_install: bool) -> None:
         msg = (
             f"PS5 Autopayload Integration installiert (v{APP_VERSION}). "
             "Bitte Home Assistant Core neu starten, dann unter "
-            "Einstellungen \u2192 Ger\u00e4te & Dienste \u2192 Integration hinzuf\u00fcgen \u2192 "
+            "Einstellungen → Geräte & Dienste → Integration hinzufügen → "
             '"PS5 Autopayload" suchen und einrichten.'
         )
     else:
         msg = (
             f"PS5 Autopayload Integration aktualisiert (v{APP_VERSION}). "
             "Bitte Home Assistant Core neu starten und dann unter "
-            "Einstellungen \u2192 Ger\u00e4te & Dienste \u2192 Integration hinzuf\u00fcgen \u2192 "
+            "Einstellungen → Geräte & Dienste → Integration hinzufügen → "
             '"PS5 Autopayload" suchen.'
         )
     try:

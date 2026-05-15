@@ -144,46 +144,26 @@ def write_ha_services_yaml() -> None:
 # ── Reload integration ────────────────────────────────────────────
 
 def reload_integration() -> dict:
-    """Find the ps5_autopayload config entry and reload it (blocking)."""
+    """Ask the HA integration to refresh its run_profile flow list.
+
+    Previously this looked up the config entry via
+    ``GET /core/api/config/config_entries/entries`` and called
+    ``homeassistant.reload_config_entry``. That REST path does not exist
+    in HA Core (config entries are WebSocket-only) and returned HTTP 404
+    on every save, so the dropdown never updated without a Core restart.
+
+    Instead we call the integration's own ``ps5_autopayload.reload_profiles``
+    service. ``POST /core/api/services/<domain>/<service>`` is the same
+    proven endpoint used for notifications; the service handler rebuilds
+    the run_profile selector directly inside HA.
+    """
     if not SUPERVISOR_TOKEN:
         return {"success": False, "error": "No SUPERVISOR_TOKEN"}
-    try:
-        req = urllib.request.Request(
-            "http://supervisor/core/api/config/config_entries/entries",
-            headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}"},
-            method="GET",
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            entries = json.loads(resp.read().decode())
-
-        entry = next((e for e in entries if e.get("domain") == "ps5_autopayload"), None)
-        if not entry:
-            return {"success": False, "error": "Integration not set up in HA – add it first"}
-
-        entry_id = entry["entry_id"]
-        data = json.dumps({"entry_id": entry_id}).encode()
-        req2 = urllib.request.Request(
-            "http://supervisor/core/api/services/homeassistant/reload_config_entry",
-            data=data,
-            headers={
-                "Authorization": f"Bearer {SUPERVISOR_TOKEN}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req2, timeout=10):
-            pass
-
-        _log.info("HA integration reloaded (entry_id=%s)", entry_id)
-        return {"success": True, "entry_id": entry_id}
-
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode(errors="replace")[:200]
-        _log.error("HA reload HTTP %s: %s | %s", exc.code, exc.reason, body)
-        return {"success": False, "error": f"HTTP {exc.code}: {exc.reason}"}
-    except Exception as exc:
-        _log.error("HA reload error: %s", exc)
-        return {"success": False, "error": str(exc)}
+    ok = _call_ha_service("ps5_autopayload", "reload_profiles", {})
+    if ok:
+        _log.info("HA integration flow list refresh requested")
+        return {"success": True}
+    return {"success": False, "error": "reload_profiles service call failed"}
 
 
 # ── Notifications ──────────────────────────────────────────────────
