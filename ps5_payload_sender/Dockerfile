@@ -1,8 +1,8 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12
+# Multi-arch base image (amd64 + aarch64) with Python 3.12 pre-installed.
+ARG BUILD_FROM=ghcr.io/home-assistant/base-python:3.12-alpine3.23
 FROM ${BUILD_FROM}
 
-# base-python already includes Python 3.12.
-# The environment is externally managed (PEP 668), so use a venv.
+# Python is externally managed (PEP 668), so use a venv.
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
