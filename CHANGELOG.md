@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.1.5] – 2026-05-15
+
+### HA Integration — Robustness & Auto-Refresh
+
+- **Flow dropdown auto-updates**: the `profile_name` selector in HA automations now refreshes automatically whenever a flow is saved or deleted — no more manual `reload_profiles` call required
+- **Integration survives add-on updates**: services (`run_profile`, `stop`, `pause`, `resume`) are now registered in `async_setup` instead of only `async_setup_entry`, so they remain available even if the config entry fails to reload after a version bump
+- **Startup sync**: on add-on startup the integration is reloaded automatically to ensure HA's service list reflects the current flow library
+
 ## [1.1.4] – 2026-05-15
 
 ### Multi-Architecture Docker Support
