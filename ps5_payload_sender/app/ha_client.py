@@ -146,22 +146,32 @@ def write_ha_services_yaml() -> None:
 def reload_integration() -> dict:
     """Ask the HA integration to refresh its run_profile flow list.
 
-    Previously this looked up the config entry via
-    ``GET /core/api/config/config_entries/entries`` and called
-    ``homeassistant.reload_config_entry``. That REST path does not exist
-    in HA Core (config entries are WebSocket-only) and returned HTTP 404
-    on every save, so the dropdown never updated without a Core restart.
-
-    Instead we call the integration's own ``ps5_autopayload.reload_profiles``
-    service. ``POST /core/api/services/<domain>/<service>`` is the same
-    proven endpoint used for notifications; the service handler rebuilds
-    the run_profile selector directly inside HA.
+    The current flow names are pushed *inside* the service call so the
+    integration handler does not have to call back to the add-on. A
+    callback round-trip (add-on → HA → add-on) made the blocking REST
+    service call exceed its timeout and return 502, so the dropdown
+    never updated. With the list in the payload the service completes
+    instantly.
     """
     if not SUPERVISOR_TOKEN:
         return {"success": False, "error": "No SUPERVISOR_TOKEN"}
-    ok = _call_ha_service("ps5_autopayload", "reload_profiles", {})
+    profiles: list[str] = []
+    try:
+        if PROFILES_DIR.exists():
+            profiles = sorted(
+                f.name[:-4]
+                for f in PROFILES_DIR.iterdir()
+                if f.is_file()
+                and f.suffix.lower() == ".txt"
+                and f.name not in HIDDEN_PROFILES
+            )
+    except Exception as exc:
+        _log.warning("reload_integration: could not list profiles: %s", exc)
+    ok = _call_ha_service(
+        "ps5_autopayload", "reload_profiles", {"profiles": profiles}
+    )
     if ok:
-        _log.info("HA integration flow list refresh requested")
+        _log.info("HA flow list pushed to integration (%d flows)", len(profiles))
         return {"success": True}
     return {"success": False, "error": "reload_profiles service call failed"}
 

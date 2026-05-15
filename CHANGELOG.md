@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [1.1.8] – 2026-05-15
+
+### Dropdown Refresh: Timeout/502 Fixed (log-confirmed)
+
+The 1.1.7 service call worked (no more 404), but the add-on log then showed `reload_profiles error: timed out` / `HTTP 502` on every save. Cause: the blocking REST service call waited for the integration handler, which called *back* to the add-on (`_get /api/autoload/profiles`) to fetch the flow list — that round-trip exceeded the request timeout.
+
+- The add-on now **pushes the flow list inside the service payload** (`reload_profiles: {profiles: [...]}`). The integration reads it from `call.data` and never calls back, so the service completes instantly — no timeout, no 502.
+- Integration base URLs reordered (`172.30.32.1` before `localhost`) since `localhost` never reaches the add-on from the HA Core container, only added latency.
+
 ## [1.1.7] – 2026-05-15
 
 ### The Actual Root Cause (log-confirmed)
