@@ -1,12 +1,8 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12
 FROM ${BUILD_FROM}
 
-# HA Supervisor uses ghcr.io/home-assistant/amd64-base:latest (Alpine).
-# Python is NOT included – install it first.
-RUN apk add --no-cache python3 py3-pip
-
-# Alpine's Python 3.12 is marked "externally managed" (PEP 668),
-# so we create a venv – pip installs into it without system restrictions.
+# base-python already includes Python 3.12.
+# The environment is externally managed (PEP 668), so use a venv.
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 

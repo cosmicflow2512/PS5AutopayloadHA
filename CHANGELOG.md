@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.1.4] – 2026-05-15
+
+### Multi-Architecture Docker Support
+
+- Added `build.yaml` mapping each supported architecture to its `base-python:3.12` base image — HA Supervisor now correctly resolves the right image for `aarch64`, `amd64`, `armv7`, `armhf`, and `i386`
+- Dockerfile updated to use `base-python` (Python 3.12 pre-installed) — removes the manual `apk add python3 py3-pip` step and reduces image build time
+- Fixes build failure on ARM platforms (Raspberry Pi, ODROID, etc.) reported in [#42](https://github.com/cosmicflow2512/PS5AutopayloadHA/issues/42)
+
 ## [1.1.3] – 2026-05-14
 
 ### `.bin` Payloads Supported
