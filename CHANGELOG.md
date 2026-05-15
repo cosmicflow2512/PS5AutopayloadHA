@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.1.6] – 2026-05-15
+
+### Flow Dropdown Actually Updates Now
+
+- **Root cause fix**: HA caches `services.yaml` descriptions and does *not* re-read them on `reload_config_entry`, so the v1.1.5 auto-refresh never reached the dropdown. The `run_profile` flow list is now set at runtime via `async_set_service_schema`, pulling the live flow list directly from the add-on — this is the only mechanism HA honors without a full Core restart.
+- The selector is rebuilt on every integration reload (triggered automatically when a flow is saved or deleted), so the automation editor always shows the current flows.
+
 ## [1.1.5] – 2026-05-15
 
 ### HA Integration — Robustness & Auto-Refresh
