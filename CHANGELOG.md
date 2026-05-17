@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [1.1.9] – 2026-05-17
+
+### Dropdown Refresh: The Real Root Cause (finally)
+
+Every dropdown-refresh attempt since 1.1.5 silently failed for one reason: the generated integration called `hass.services.async_set_service_schema(...)`, but `async_set_service_schema` is **not** a method on the `ServiceRegistry` — it is a module-level helper in `homeassistant.helpers.service` that takes `hass` as its first argument. The call raised `'ServiceRegistry' object has no attribute 'async_set_service_schema'` on **every** invocation, was swallowed by the surrounding `try/except`, and only ever logged as a warning — so the selector was never actually updated and the dropdown only refreshed on a full HA Core restart.
+
+- The integration now imports `async_set_service_schema` from `homeassistant.helpers.service` and calls it correctly as `_set_service_schema(hass, DOMAIN, "run_profile", schema)`. This is the API HA itself uses to register service descriptions, and it is the missing piece that makes the live dropdown update work without a Core restart.
+- No behavioural change to the push-based flow list (1.1.8) — that part was already correct; it just never reached a working `async_set_service_schema`.
+
+### Removed Both Update/Setup Notices
+
+- Removed the **Repairs "Restart required" notice** (the `_version_guard` issue-registry mechanism added in 1.1.7) — no more badge on Settings or card under Settings → System → Repairs.
+- Removed the **persistent post-install/-update notification** ("Integration installiert/aktualisiert … bitte Home Assistant Core neu starten …") that was created in HA's notification center.
+
+> Note: the generated integration is still only rewritten when the add-on version changes, so after updating to 1.1.9 restart Home Assistant once so HA loads the corrected integration. There is no longer any in-HA prompt for this — it is a one-time manual restart.
+
 ## [1.1.8] – 2026-05-15
 
 ### Dropdown Refresh: Timeout/502 Fixed (log-confirmed)
