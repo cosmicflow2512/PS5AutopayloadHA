@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [1.1.10] – 2026-05-22
+
+### BD-UN-JB `.jar` Flow Steps: Actually Execute Now
+
+Reported by @sagacity in #53: a `.jar` step added to a flow via the builder showed up correctly in the saved profile but was silently dropped at run time — the step never appeared in the execution log and nothing was sent to port 9025.
+
+- **Root cause:** the autoload parser regex (`autoload_parser._PAYLOAD_RE`) only matched `.lua` and `.elf` filenames. Lines containing `.jar` (and `.bin`) were parsed as `None` and quietly skipped, so the directive list reaching the exec engine had no JAR send step in it at all. 1.1.9 added uploads, the picker badge and the auto-port mapping, but the parser was missed — the flow engine never saw `.jar` directives.
+- **Fix:** the payload regex now accepts `.lua`, `.elf`, `.bin` and `.jar` (case-insensitive). `.bin` flow steps are now also valid (previously only the upload endpoint accepted them — they were dropped from flows). Tests cover all four extensions and the explicit-port form (e.g. `bdunjb.jar 9025`).
+
+### File Picker Filter Now Includes `.jar`
+
+- The **Add Payload** file dialog filter (`accept` attribute) was still `.lua,.elf,.bin` — meaning users had to switch the dialog to *All files* to even see their `.jar` files. The accept list now includes `.jar`, matching the upload endpoint and the empty-state hint.
+
+## [1.1.9] – 2026-05-17
+
+### BD-UN-JB Support: `.jar` Payloads on Port 9025
+
+- `.jar` files are now first-class payloads alongside `.elf`, `.lua` and `.bin`. Uploads (local + GitHub source scans + release-asset importer) accept the new extension, the payload list shows a dedicated **JAR** badge, and a JAR filter tab lets you isolate `.jar` payloads.
+- Auto port resolution: `.jar` is routed to the BD-UN-JB loader on port **9025** (`JAR_PORT`, configurable in the add-on options). `.lua → 9026`, `.elf/.bin → 9021` remain unchanged.
+- New add-on option `jar_port: 9025` (with matching schema entry) — exposed through `/api/config` and the WebSocket config event as `jar_port`.
+- ZIP autoload export marks `.jar` steps as skipped (the PS5-side autoloader can only chain `.elf`).
+
+### Dropdown Refresh: The Real Root Cause (finally)
+
+Every dropdown-refresh attempt since 1.1.5 silently failed for one reason: the generated integration called `hass.services.async_set_service_schema(...)`, but `async_set_service_schema` is **not** a method on the `ServiceRegistry` — it is a module-level helper in `homeassistant.helpers.service` that takes `hass` as its first argument. The call raised `'ServiceRegistry' object has no attribute 'async_set_service_schema'` on **every** invocation, was swallowed by the surrounding `try/except`, and only ever logged as a warning — so the selector was never actually updated and the dropdown only refreshed on a full HA Core restart.
+
+- The integration now imports `async_set_service_schema` from `homeassistant.helpers.service` and calls it correctly as `_set_service_schema(hass, DOMAIN, "run_profile", schema)`. This is the API HA itself uses to register service descriptions, and it is the missing piece that makes the live dropdown update work without a Core restart.
+- No behavioural change to the push-based flow list (1.1.8) — that part was already correct; it just never reached a working `async_set_service_schema`.
+
+### Removed Both Update/Setup Notices
+
+- Removed the **Repairs "Restart required" notice** (the `_version_guard` issue-registry mechanism added in 1.1.7) — no more badge on Settings or card under Settings → System → Repairs.
+- Removed the **persistent post-install/-update notification** ("Integration installiert/aktualisiert … bitte Home Assistant Core neu starten …") that was created in HA's notification center.
+
+> Note: the generated integration is still only rewritten when the add-on version changes, so after updating to 1.1.9 restart Home Assistant once so HA loads the corrected integration. There is no longer any in-HA prompt for this — it is a one-time manual restart.
+
 ## [1.1.8] – 2026-05-15
 
 ### Dropdown Refresh: Timeout/502 Fixed (log-confirmed)

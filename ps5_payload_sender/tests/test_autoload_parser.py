@@ -39,7 +39,26 @@ class TestParseLine:
         assert d.filename == "Loader.ELF"
 
     def test_unknown_extension_returns_none(self):
-        assert parse_line("not_a_payload.bin") is None
+        assert parse_line("not_a_payload.txt") is None
+        assert parse_line("not_a_payload.pkg") is None
+
+    def test_bin_payload_parsed(self):
+        d = parse_line("kpayload.bin")
+        assert isinstance(d, SendDirective)
+        assert d.filename == "kpayload.bin"
+        assert d.port is None
+
+    def test_jar_payload_parsed(self):
+        d = parse_line("bdunjb.jar")
+        assert isinstance(d, SendDirective)
+        assert d.filename == "bdunjb.jar"
+        assert d.port is None
+
+    def test_jar_payload_with_explicit_port(self):
+        d = parse_line("bdunjb.jar 9025")
+        assert isinstance(d, SendDirective)
+        assert d.filename == "bdunjb.jar"
+        assert d.port == 9025
 
     def test_delay(self):
         d = parse_line("!3000")

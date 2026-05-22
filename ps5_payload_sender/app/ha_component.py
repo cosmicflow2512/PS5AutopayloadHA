@@ -9,10 +9,9 @@ from __future__ import annotations
 import json
 import logging
 import shutil
-import urllib.request
 from pathlib import Path
 
-from config import APP_DIR, APP_VERSION, SUPERVISOR_TOKEN
+from config import APP_DIR, APP_VERSION
 
 _log = logging.getLogger("ps5_autopayload")
 
@@ -28,7 +27,9 @@ _INIT_PY = (
     'from homeassistant.config_entries import ConfigEntry\n'
     'from homeassistant.core import HomeAssistant, ServiceCall\n'
     'import homeassistant.helpers.config_validation as cv\n'
-    'from homeassistant.helpers import issue_registry as ir\n'
+    'from homeassistant.helpers.service import (\n'
+    '    async_set_service_schema as _set_service_schema,\n'
+    ')\n'
     '\n'
     '_LOGGER = logging.getLogger(__name__)\n'
     'DOMAIN = "ps5_autopayload"\n'
@@ -99,30 +100,6 @@ _INIT_PY = (
     '        names = call.data.get("profiles")\n'
     '    await _refresh_run_profile_schema(_HASS, names)\n'
     '\n'
-    'async def _version_guard(hass: HomeAssistant) -> None:\n'
-    '    """Raise a HA Repairs issue ("Restart required") when the add-on has\n'
-    '    been updated to a newer version than the integration HA currently\n'
-    '    has loaded; clear it once they match again after the restart. This\n'
-    '    is the same mechanism other integrations use - it shows as a badge\n'
-    '    under Settings and a card in Settings > System > Repairs."""\n'
-    '    try:\n'
-    '        info = await _get("/api/version")\n'
-    '        addon = (info or {}).get("version")\n'
-    '        if addon and addon != _VERSION:\n'
-    '            ir.async_create_issue(\n'
-    '                hass, DOMAIN, "restart_required",\n'
-    '                is_fixable=False,\n'
-    '                severity=ir.IssueSeverity.WARNING,\n'
-    '                translation_key="restart_required",\n'
-    '                translation_placeholders={\n'
-    '                    "addon": str(addon), "loaded": _VERSION,\n'
-    '                },\n'
-    '            )\n'
-    '        else:\n'
-    '            ir.async_delete_issue(hass, DOMAIN, "restart_required")\n'
-    '    except Exception as exc:\n'
-    '        _LOGGER.debug("PS5 Autopayload: version guard skipped - %s", exc)\n'
-    '\n'
     'async def _refresh_run_profile_schema(hass: HomeAssistant, names=None) -> None:\n'
     '    """Rebuild the run_profile selector. ``names`` is the flow list the\n'
     '    add-on pushes in the service payload; when absent (boot path) it is\n'
@@ -151,7 +128,7 @@ _INIT_PY = (
     '        DOMAIN, "run_profile", _run_profile, schema=_RUN_PROFILE_VOL,\n'
     '    )\n'
     '    try:\n'
-    '        hass.services.async_set_service_schema(DOMAIN, "run_profile", {\n'
+    '        _set_service_schema(hass, DOMAIN, "run_profile", {\n'
     '            "name": "Run Flow",\n'
     '            "description": "Execute a saved PS5 Autopayload flow",\n'
     '            "fields": {\n'
@@ -172,7 +149,6 @@ _INIT_PY = (
     '    except Exception as exc:\n'
     '        _LOGGER.warning("PS5 Autopayload: schema set failed - %s", exc)\n'
     '    _LOGGER.info("PS5 Autopayload: run_profile refreshed (%d flows)", len(opts))\n'
-    '    await _version_guard(hass)\n'
     '\n'
     'def _register_services(hass: HomeAssistant) -> None:\n'
     '    """Register all services (idempotent; survives add-on updates)."""\n'
@@ -235,17 +211,6 @@ _STRINGS_EN = {
         },
         "abort": {"already_configured": "PS5 Autopayload is already configured."},
     },
-    "issues": {
-        "restart_required": {
-            "title": "Restart Home Assistant to finish updating PS5 Autopayload",
-            "description": (
-                "The PS5 Autopayload add-on was updated to {addon}, but Home "
-                "Assistant still has the {loaded} integration loaded. Restart "
-                "Home Assistant (Settings → System → Restart) to finish "
-                "the update. This notice clears itself afterwards."
-            ),
-        }
-    },
 }
 
 _STRINGS_DE = {
@@ -260,18 +225,6 @@ _STRINGS_DE = {
             }
         },
         "abort": {"already_configured": "PS5 Autopayload ist bereits konfiguriert."},
-    },
-    "issues": {
-        "restart_required": {
-            "title": "Home Assistant neu starten, um PS5-Autopayload-Update abzuschließen",
-            "description": (
-                "Das PS5 Autopayload Add-on wurde auf {addon} aktualisiert, "
-                "aber Home Assistant hat noch die Integration {loaded} "
-                "geladen. Starte Home Assistant neu (Einstellungen → System "
-                "→ Neu starten), um das Update abzuschließen. Dieser Hinweis "
-                "verschwindet danach von selbst."
-            ),
-        }
     },
 }
 
@@ -361,41 +314,3 @@ def write_custom_component() -> None:
         APP_VERSION,
         "first" if first_install else "update",
     )
-    _send_ha_notification(first_install)
-
-
-def _send_ha_notification(first_install: bool) -> None:
-    if not SUPERVISOR_TOKEN:
-        return
-    if first_install:
-        msg = (
-            f"PS5 Autopayload Integration installiert (v{APP_VERSION}). "
-            "Bitte Home Assistant Core neu starten, dann unter "
-            "Einstellungen → Geräte & Dienste → Integration hinzufügen → "
-            '"PS5 Autopayload" suchen und einrichten.'
-        )
-    else:
-        msg = (
-            f"PS5 Autopayload Integration aktualisiert (v{APP_VERSION}). "
-            "Bitte Home Assistant Core neu starten und dann unter "
-            "Einstellungen → Geräte & Dienste → Integration hinzufügen → "
-            '"PS5 Autopayload" suchen.'
-        )
-    try:
-        data = json.dumps({
-            "title": "PS5 Autopayload",
-            "message": msg,
-            "notification_id": "ps5_autopayload_setup",
-        }).encode()
-        req = urllib.request.Request(
-            "http://supervisor/core/api/services/persistent_notification/create",
-            data=data,
-            headers={
-                "Authorization": f"Bearer {SUPERVISOR_TOKEN}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception as exc:
-        _log.warning("Could not send HA notification: %s", exc)
