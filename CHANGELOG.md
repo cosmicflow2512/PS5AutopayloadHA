@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.1.10] – 2026-05-22
+
+### BD-UN-JB `.jar` Flow Steps: Actually Execute Now
+
+Reported by @sagacity in #53: a `.jar` step added to a flow via the builder showed up correctly in the saved profile but was silently dropped at run time — the step never appeared in the execution log and nothing was sent to port 9025.
+
+- **Root cause:** the autoload parser regex (`autoload_parser._PAYLOAD_RE`) only matched `.lua` and `.elf` filenames. Lines containing `.jar` (and `.bin`) were parsed as `None` and quietly skipped, so the directive list reaching the exec engine had no JAR send step in it at all. 1.1.9 added uploads, the picker badge and the auto-port mapping, but the parser was missed — the flow engine never saw `.jar` directives.
+- **Fix:** the payload regex now accepts `.lua`, `.elf`, `.bin` and `.jar` (case-insensitive). `.bin` flow steps are now also valid (previously only the upload endpoint accepted them — they were dropped from flows). Tests cover all four extensions and the explicit-port form (e.g. `bdunjb.jar 9025`).
+
+### File Picker Filter Now Includes `.jar`
+
+- The **Add Payload** file dialog filter (`accept` attribute) was still `.lua,.elf,.bin` — meaning users had to switch the dialog to *All files* to even see their `.jar` files. The accept list now includes `.jar`, matching the upload endpoint and the empty-state hint.
+
 ## [1.1.9] – 2026-05-17
 
 ### BD-UN-JB Support: `.jar` Payloads on Port 9025
