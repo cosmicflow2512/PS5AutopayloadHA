@@ -29,7 +29,7 @@ function renderPayloads() {
         ? 'No payloads found.'
         : state.payloadFilter === 'favorites'
           ? 'No favorites yet. Click ★ on a payload to add it.'
-          : 'No payloads. Upload a .lua, .elf or .bin file.'
+          : 'No payloads. Upload a .lua, .elf, .bin or .jar file.'
     }</div>`;
     renderBulkBar();
     return;
@@ -80,8 +80,12 @@ function buildPayloadItem(p) {
   });
 
   const badge = document.createElement('span');
-  badge.className  = `badge ${p.ext === '.lua' ? 'badge-lua' : 'badge-elf'}`;
+  const badgeCls = p.ext === '.lua' ? 'badge-lua'
+                 : p.ext === '.jar' ? 'badge-jar'
+                 : 'badge-elf';
+  badge.className  = `badge ${badgeCls}`;
   if (p.ext === '.bin') badge.title = 'Treated as ELF — sent to port 9021';
+  if (p.ext === '.jar') badge.title = 'BD-UN-JB — sent to port 9025';
   badge.textContent = p.ext.replace('.', '').toUpperCase();
 
   const name = document.createElement('span');

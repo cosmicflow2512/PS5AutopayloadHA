@@ -371,10 +371,13 @@ function _buildPayloadEditPanel(step, idx) {
 
 // ── WorkflowStep renderers ────────────────────────────────────────
 function _buildPayloadStep(step, idx, stepEl, mainRow, btns) {
-  const isLua = step.filename.toLowerCase().endsWith('.lua');
+  const fn = step.filename.toLowerCase();
+  const labelCls = fn.endsWith('.lua') ? 'lua'
+                 : fn.endsWith('.jar') ? 'jar'
+                 : 'elf';
 
   const badge = document.createElement('span');
-  badge.className   = `payload-label ${isLua ? 'lua' : 'elf'}`;
+  badge.className   = `payload-label ${labelCls}`;
   badge.textContent = 'Payload';
 
   const fnEl = document.createElement('span');
@@ -773,8 +776,11 @@ async function exportAutoloadZip() {
     } else if (step.type === 'wait_port') {
       warnings.push(`WAIT port ${step.port} (not supported by autoloader)`);
     } else if (step.type === 'payload') {
-      if (step.filename.toLowerCase().endsWith('.lua')) {
+      const fn = step.filename.toLowerCase();
+      if (fn.endsWith('.lua')) {
         warnings.push(`Lua payload ${step.filename} (skipped)`);
+      } else if (fn.endsWith('.jar')) {
+        warnings.push(`JAR payload ${step.filename} (skipped — BD-UN-JB cannot be autoloaded)`);
       } else {
         lines.push(step.filename);
         payloads.push(step.filename);
