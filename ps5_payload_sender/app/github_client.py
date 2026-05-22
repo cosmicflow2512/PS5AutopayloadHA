@@ -44,7 +44,7 @@ def _build_headers() -> dict:
         h["Authorization"] = f"Bearer {GITHUB_TOKEN}"
     return h
 
-_PAYLOAD_EXTENSIONS = {".elf", ".lua", ".bin"}
+_PAYLOAD_EXTENSIONS = {".elf", ".lua", ".bin", ".jar"}
 
 # ── In-memory tree cache ──────────────────────────────────────────
 _tree_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}

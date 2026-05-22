@@ -41,7 +41,7 @@ async def api_upload(file: UploadFile = File(...)):
     safe = Path(file.filename).name
     ext = Path(safe).suffix.lower()
     if ext not in ALLOWED_PAYLOAD_EXTENSIONS:
-        raise HTTPException(400, f"Type '{ext}' not allowed — only .lua, .elf and .bin files")
+        raise HTTPException(400, f"Type '{ext}' not allowed — only .lua, .elf, .bin and .jar files")
     content = await file.read()
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(executor, atomic_write_bytes, PAYLOAD_DIR / safe, content)
@@ -76,7 +76,7 @@ async def api_import_payload(req: ImportPayloadRequest):
         raise HTTPException(502, f"Download failed: {exc}")
     safe = Path(actual_name).name
     if Path(safe).suffix.lower() not in ALLOWED_PAYLOAD_EXTENSIONS:
-        raise HTTPException(400, "Only .elf, .lua and .bin files allowed")
+        raise HTTPException(400, "Only .elf, .lua, .bin and .jar files allowed")
     payload_hash = hashlib.sha256(data).hexdigest()
     atomic_write_bytes(PAYLOAD_DIR / safe, data)
     meta = load_payload_meta()

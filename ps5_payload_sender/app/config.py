@@ -43,5 +43,5 @@ GITHUB_RAW_CONFIG = (
     "https://raw.githubusercontent.com/cosmicflow2512/PS5AutopayloadHA"
     "/main/ps5_payload_sender/config.yaml"
 )
-ALLOWED_PAYLOAD_EXTENSIONS: set[str] = {".lua", ".elf", ".bin"}
+ALLOWED_PAYLOAD_EXTENSIONS: set[str] = {".lua", ".elf", ".bin", ".jar"}
 HIDDEN_PROFILES: set[str] = {"ftp.txt", "goldhen.txt", "_builder_run.txt"}

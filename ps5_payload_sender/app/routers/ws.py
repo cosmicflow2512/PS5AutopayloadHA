@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from config import HOST
-from payload_sender import DEFAULT_ELF_PORT, DEFAULT_LUA_PORT
+from payload_sender import DEFAULT_ELF_PORT, DEFAULT_JAR_PORT, DEFAULT_LUA_PORT
 from websocket_manager import manager
 
 router = APIRouter()
@@ -19,6 +19,7 @@ async def ws_endpoint(ws: WebSocket):
         "ps5_ip": HOST,
         "lua_port": DEFAULT_LUA_PORT,
         "elf_port": DEFAULT_ELF_PORT,
+        "jar_port": DEFAULT_JAR_PORT,
     }))
     try:
         while True:

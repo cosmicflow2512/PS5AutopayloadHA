@@ -4,6 +4,13 @@
 
 ## [1.1.9] – 2026-05-17
 
+### BD-UN-JB Support: `.jar` Payloads on Port 9025
+
+- `.jar` files are now first-class payloads alongside `.elf`, `.lua` and `.bin`. Uploads (local + GitHub source scans + release-asset importer) accept the new extension, the payload list shows a dedicated **JAR** badge, and a JAR filter tab lets you isolate `.jar` payloads.
+- Auto port resolution: `.jar` is routed to the BD-UN-JB loader on port **9025** (`JAR_PORT`, configurable in the add-on options). `.lua → 9026`, `.elf/.bin → 9021` remain unchanged.
+- New add-on option `jar_port: 9025` (with matching schema entry) — exposed through `/api/config` and the WebSocket config event as `jar_port`.
+- ZIP autoload export marks `.jar` steps as skipped (the PS5-side autoloader can only chain `.elf`).
+
 ### Dropdown Refresh: The Real Root Cause (finally)
 
 Every dropdown-refresh attempt since 1.1.5 silently failed for one reason: the generated integration called `hass.services.async_set_service_schema(...)`, but `async_set_service_schema` is **not** a method on the `ServiceRegistry` — it is a module-level helper in `homeassistant.helpers.service` that takes `hass` as its first argument. The call raised `'ServiceRegistry' object has no attribute 'async_set_service_schema'` on **every** invocation, was swallowed by the surrounding `try/except`, and only ever logged as a warning — so the selector was never actually updated and the dropdown only refreshed on a full HA Core restart.

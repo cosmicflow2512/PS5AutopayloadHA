@@ -9,6 +9,7 @@ from typing import Optional
 PAYLOAD_DIR = Path(os.environ.get("PAYLOAD_DIR", "/data/payloads"))
 DEFAULT_LUA_PORT = int(os.environ.get("LUA_PORT", 9026))
 DEFAULT_ELF_PORT = int(os.environ.get("ELF_PORT", 9021))
+DEFAULT_JAR_PORT = int(os.environ.get("JAR_PORT", 9025))
 
 # Chunk size for sending large payloads
 CHUNK_SIZE = 4096
@@ -20,8 +21,9 @@ def resolve_port(filename: str, port: Optional[int] = None) -> int:
 
     If port is explicitly given, use it.
     Otherwise derive from file extension:
-      .lua         -> DEFAULT_LUA_PORT (9026)
-      .elf / .bin  -> DEFAULT_ELF_PORT (9021)
+      .lua         -> DEFAULT_LUA_PORT (9026, Remote Lua Loader)
+      .jar         -> DEFAULT_JAR_PORT (9025, BD-UN-JB loader)
+      .elf / .bin  -> DEFAULT_ELF_PORT (9021, ELF Loader)
     Defaults to DEFAULT_ELF_PORT for unknown extensions.
     """
     if port is not None:
@@ -29,6 +31,8 @@ def resolve_port(filename: str, port: Optional[int] = None) -> int:
     ext = Path(filename).suffix.lower()
     if ext == ".lua":
         return DEFAULT_LUA_PORT
+    if ext == ".jar":
+        return DEFAULT_JAR_PORT
     return DEFAULT_ELF_PORT
 
 
