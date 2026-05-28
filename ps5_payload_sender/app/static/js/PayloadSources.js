@@ -328,7 +328,7 @@ async function addSource() {
     }
   } catch (e) {
     const txt = e.message.includes('404')
-      ? 'No .elf/.lua/.bin/.jar payload files found. ZIP-only releases are not supported.'
+      ? 'No .elf/.lua/.bin/.jar/.js payload files found. ZIP-only releases are not supported.'
       : e.message.includes('400')
         ? 'Invalid format — use owner/repo (e.g. ps5-payload-dev/kstuff)'
         : 'Error: ' + e.message;
@@ -380,7 +380,7 @@ function _renderDetectedPayloads(repo, assets) {
     cb.addEventListener('change', _updateDetectedSelectionUI);
 
     const badge = document.createElement('span');
-    badge.className   = `badge ${ext === '.lua' ? 'badge-lua' : ext === '.jar' ? 'badge-jar' : ext === '.zip' ? 'badge-zip' : 'badge-elf'}`;
+    badge.className   = `badge ${ext === '.lua' ? 'badge-lua' : ext === '.jar' ? 'badge-jar' : ext === '.js' ? 'badge-js' : ext === '.zip' ? 'badge-zip' : 'badge-elf'}`;
     badge.textContent = ext.replace('.', '').toUpperCase() || 'FILE';
 
     // Top row: checkbox + badge + filename
@@ -878,7 +878,7 @@ function _populateSourceCheckPanel(panel, repo, newAssets, repoUpdates, imported
       cb.addEventListener('change', updatePanelCount);
 
       const badge = document.createElement('span');
-      badge.className   = `badge ${ext === '.lua' ? 'badge-lua' : ext === '.jar' ? 'badge-jar' : ext === '.zip' ? 'badge-zip' : 'badge-elf'}`;
+      badge.className   = `badge ${ext === '.lua' ? 'badge-lua' : ext === '.jar' ? 'badge-jar' : ext === '.js' ? 'badge-js' : ext === '.zip' ? 'badge-zip' : 'badge-elf'}`;
       badge.textContent = ext.replace('.', '').toUpperCase() || 'FILE';
 
       // Top row: checkbox + badge + filename

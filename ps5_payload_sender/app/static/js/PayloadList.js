@@ -29,7 +29,7 @@ function renderPayloads() {
         ? 'No payloads found.'
         : state.payloadFilter === 'favorites'
           ? 'No favorites yet. Click ★ on a payload to add it.'
-          : 'No payloads. Upload a .lua, .elf, .bin or .jar file.'
+          : 'No payloads. Upload a .lua, .elf, .bin, .jar or .js file.'
     }</div>`;
     renderBulkBar();
     return;
@@ -82,10 +82,12 @@ function buildPayloadItem(p) {
   const badge = document.createElement('span');
   const badgeCls = p.ext === '.lua' ? 'badge-lua'
                  : p.ext === '.jar' ? 'badge-jar'
+                 : p.ext === '.js'  ? 'badge-js'
                  : 'badge-elf';
   badge.className  = `badge ${badgeCls}`;
   if (p.ext === '.bin') badge.title = 'Treated as ELF — sent to port 9021';
   if (p.ext === '.jar') badge.title = 'BD-UN-JB — sent to port 9025';
+  if (p.ext === '.js')  badge.title = 'Y2JB WebKit-stage — sent to port 50000';
   badge.textContent = p.ext.replace('.', '').toUpperCase();
 
   const name = document.createElement('span');

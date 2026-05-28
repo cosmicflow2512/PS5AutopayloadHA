@@ -14,7 +14,7 @@ class TestAllowlist:
 
     def test_random_extensions_still_rejected(self):
         from config import ALLOWED_PAYLOAD_EXTENSIONS
-        for ext in (".exe", ".sh", ".js", ".txt", ".zip"):
+        for ext in (".exe", ".sh", ".txt", ".zip", ".py"):
             assert ext not in ALLOWED_PAYLOAD_EXTENSIONS
 
 

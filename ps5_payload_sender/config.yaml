@@ -1,6 +1,6 @@
 name: PS5 Autopayload
 description: Manage and automate PS5 payload workflows from Home Assistant
-version: "1.1.10"
+version: "1.1.11"
 slug: ps5_payload_sender
 init: false
 arch:
@@ -19,6 +19,7 @@ options:
   lua_port: 9026
   elf_port: 9021
   jar_port: 9025
+  js_port: 50000
   port_check_timeout: 10
   port_check_interval: 500
   github_token: ""
@@ -27,6 +28,7 @@ schema:
   lua_port: int
   elf_port: int
   jar_port: int
+  js_port: int
   port_check_timeout: int
   port_check_interval: int
   github_token: str?

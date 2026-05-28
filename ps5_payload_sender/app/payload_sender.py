@@ -10,6 +10,7 @@ PAYLOAD_DIR = Path(os.environ.get("PAYLOAD_DIR", "/data/payloads"))
 DEFAULT_LUA_PORT = int(os.environ.get("LUA_PORT", 9026))
 DEFAULT_ELF_PORT = int(os.environ.get("ELF_PORT", 9021))
 DEFAULT_JAR_PORT = int(os.environ.get("JAR_PORT", 9025))
+DEFAULT_JS_PORT  = int(os.environ.get("JS_PORT",  50000))
 
 # Chunk size for sending large payloads
 CHUNK_SIZE = 4096
@@ -23,6 +24,7 @@ def resolve_port(filename: str, port: Optional[int] = None) -> int:
     Otherwise derive from file extension:
       .lua         -> DEFAULT_LUA_PORT (9026, Remote Lua Loader)
       .jar         -> DEFAULT_JAR_PORT (9025, BD-UN-JB loader)
+      .js          -> DEFAULT_JS_PORT  (50000, Y2JB WebKit-stage loader)
       .elf / .bin  -> DEFAULT_ELF_PORT (9021, ELF Loader)
     Defaults to DEFAULT_ELF_PORT for unknown extensions.
     """
@@ -33,6 +35,8 @@ def resolve_port(filename: str, port: Optional[int] = None) -> int:
         return DEFAULT_LUA_PORT
     if ext == ".jar":
         return DEFAULT_JAR_PORT
+    if ext == ".js":
+        return DEFAULT_JS_PORT
     return DEFAULT_ELF_PORT
 
 

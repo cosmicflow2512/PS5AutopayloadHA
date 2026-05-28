@@ -60,6 +60,18 @@ class TestParseLine:
         assert d.filename == "bdunjb.jar"
         assert d.port == 9025
 
+    def test_js_payload_parsed(self):
+        d = parse_line("lapse.js")
+        assert isinstance(d, SendDirective)
+        assert d.filename == "lapse.js"
+        assert d.port is None
+
+    def test_js_payload_with_explicit_port(self):
+        d = parse_line("lapse.js 50000")
+        assert isinstance(d, SendDirective)
+        assert d.filename == "lapse.js"
+        assert d.port == 50000
+
     def test_delay(self):
         d = parse_line("!3000")
         assert isinstance(d, DelayDirective)

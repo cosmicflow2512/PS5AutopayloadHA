@@ -17,7 +17,7 @@ from config import (
 )
 from exec_engine import executor
 from ha_client import get_remote_version
-from payload_sender import DEFAULT_ELF_PORT, DEFAULT_JAR_PORT, DEFAULT_LUA_PORT
+from payload_sender import DEFAULT_ELF_PORT, DEFAULT_JAR_PORT, DEFAULT_JS_PORT, DEFAULT_LUA_PORT
 from storage import load_ui_state, save_ui_state
 
 router = APIRouter()
@@ -62,6 +62,7 @@ async def api_get_config():
         "lua_port": DEFAULT_LUA_PORT,
         "elf_port": DEFAULT_ELF_PORT,
         "jar_port": DEFAULT_JAR_PORT,
+        "js_port": DEFAULT_JS_PORT,
         "port_check_timeout": PORT_CHECK_TIMEOUT,
         "port_check_interval": PORT_CHECK_INTERVAL,
     }

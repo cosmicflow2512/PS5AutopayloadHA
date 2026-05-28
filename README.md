@@ -6,7 +6,7 @@
 
 ### Fully Automated PS5 Payload Execution via Home Assistant
 
-[![Version](https://img.shields.io/badge/version-1.1.10-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
+[![Version](https://img.shields.io/badge/version-1.1.11-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
 [![HA](https://img.shields.io/badge/Home%20Assistant-Add--on-41BDF5?style=flat-square&logo=home-assistant)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
@@ -50,6 +50,7 @@ No manual timing. No repeated sending. No trial and error.
 - **Port 9026** → Remote Lua Loader is ready
 - **Port 9025** → BD-UN-JB loader is ready to receive a `.jar` payload
 - **Port 9021** → ELF Loader (elfldr) is ready to receive payloads
+- **Port 50000** → Y2JB WebKit-stage loader is ready to receive a `.js` payload
 
 ---
 
@@ -86,12 +87,13 @@ Supported loaders:
 | ELF Loader (elfldr) | 9021 |
 | BD-UN-JB Loader | 9025 |
 | Remote Lua Loader | 9026 |
+| Y2JB WebKit-stage Loader | 50000 |
 
 ---
 
 ## Features
 
-- Upload `.elf`, `.bin`, `.lua` and `.jar` payloads — drag-and-drop or file picker, no GitHub URL required (`.bin` → ELF Loader port 9021, `.jar` → BD-UN-JB port 9025)
+- Upload `.elf`, `.bin`, `.lua`, `.jar` and `.js` payloads — drag-and-drop or file picker, no GitHub URL required (`.bin` → ELF Loader port 9021, `.jar` → BD-UN-JB port 9025, `.js` → Y2JB port 50000)
 - Visual Auto-Load Builder — Send / Delay / Wait-for-Port steps
 - Drag-and-drop step reordering
 - Per-flow notifications — loader ready, flow complete, timeout/failure via any `notify.*` service
@@ -128,7 +130,7 @@ Pin your most-used flows for instant one-tap execution.
 ---
 
 ### Payloads
-Upload, search, filter and send `.lua`, `.elf`, `.bin` and `.jar` payloads directly to your PS5 — local files via the **Add Payload** button, no GitHub URL needed.
+Upload, search, filter and send `.lua`, `.elf`, `.bin`, `.jar` and `.js` payloads directly to your PS5 — local files via the **Add Payload** button, no GitHub URL needed.
 
 ![Payloads](docs/screenshots/payloads.png)
 
@@ -258,6 +260,7 @@ ps5_ip: "192.168.1.100"   # PS5 IP address (can also be set in the UI)
 lua_port: 9026             # Default port for Lua payloads
 elf_port: 9021             # Default port for ELF payloads
 jar_port: 9025             # Default port for BD-UN-JB .jar payloads
+js_port: 50000             # Default port for Y2JB .js payloads
 port_check_timeout: 10     # Seconds to wait for a port before failing
 port_check_interval: 500   # Milliseconds between port check retries
 github_token: ""           # Optional — raises GitHub API rate limit to 5,000 req/hr
@@ -364,5 +367,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <div align="center">
-  <sub>Built for Home Assistant · Tested on HA OS · v1.1.10</sub>
+  <sub>Built for Home Assistant · Tested on HA OS · v1.1.11</sub>
 </div>
