@@ -70,7 +70,7 @@ async def api_add_source(req: SourceAddRequest):
     if not assets:
         raise HTTPException(
             404,
-            "No .elf, .lua, .bin or .jar payload files found. "
+            "No .elf, .lua, .bin, .jar or .js payload files found. "
             "Try a different source type or folder.",
         )
 

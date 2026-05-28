@@ -374,6 +374,7 @@ function _buildPayloadStep(step, idx, stepEl, mainRow, btns) {
   const fn = step.filename.toLowerCase();
   const labelCls = fn.endsWith('.lua') ? 'lua'
                  : fn.endsWith('.jar') ? 'jar'
+                 : fn.endsWith('.js')  ? 'js'
                  : 'elf';
 
   const badge = document.createElement('span');
@@ -781,6 +782,8 @@ async function exportAutoloadZip() {
         warnings.push(`Lua payload ${step.filename} (skipped)`);
       } else if (fn.endsWith('.jar')) {
         warnings.push(`JAR payload ${step.filename} (skipped — BD-UN-JB cannot be autoloaded)`);
+      } else if (fn.endsWith('.js')) {
+        warnings.push(`JS payload ${step.filename} (skipped — Y2JB WebKit-stage cannot be autoloaded)`);
       } else {
         lines.push(step.filename);
         payloads.push(step.filename);

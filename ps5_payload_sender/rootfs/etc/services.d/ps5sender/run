@@ -25,6 +25,7 @@ PS5_IP=$(bashio::config 'ps5_ip')
 LUA_PORT=$(bashio::config 'lua_port')
 ELF_PORT=$(bashio::config 'elf_port')
 JAR_PORT=$(bashio::config 'jar_port' || echo "9025")
+JS_PORT=$(bashio::config 'js_port' || echo "50000")
 PORT_CHECK_TIMEOUT=$(bashio::config 'port_check_timeout')
 PORT_CHECK_INTERVAL=$(bashio::config 'port_check_interval')
 GITHUB_TOKEN=$(bashio::config 'github_token' || echo "")
@@ -33,13 +34,14 @@ export PS5_IP="${PS5_IP}"
 export LUA_PORT="${LUA_PORT}"
 export ELF_PORT="${ELF_PORT}"
 export JAR_PORT="${JAR_PORT}"
+export JS_PORT="${JS_PORT}"
 export PORT_CHECK_TIMEOUT="${PORT_CHECK_TIMEOUT}"
 export PORT_CHECK_INTERVAL="${PORT_CHECK_INTERVAL}"
 export PAYLOAD_DIR="/data/payloads"
 export GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 bashio::log.info "PS5 IP: ${PS5_IP:-<not set>}"
-bashio::log.info "Lua Port: ${LUA_PORT}  |  ELF Port: ${ELF_PORT}  |  JAR Port: ${JAR_PORT}"
+bashio::log.info "Lua Port: ${LUA_PORT}  |  ELF Port: ${ELF_PORT}  |  JAR Port: ${JAR_PORT}  |  JS Port: ${JS_PORT}"
 bashio::log.info "GitHub token: ${GITHUB_TOKEN:+set}"
 bashio::log.info "Payload dir: ${PAYLOAD_DIR}"
 
