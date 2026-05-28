@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.1.11] – 2026-05-28
+
+### Y2JB Support: `.js` Payloads on Port 50000
+
+When using the Y2JB (YouTube jailbreak) exploit the first step after userland entry is sending `lapse.js` to port **50000** (the WebKit-stage loader). `.js` is now a first-class payload type alongside `.elf`, `.lua`, `.bin` and `.jar`:
+
+- `.js` files are accepted by the upload endpoint, the GitHub source scanner, and the release-asset importer.
+- Auto port resolution: `.js` → **50000** (`JS_PORT`, new add-on option, configurable). All other mappings stay unchanged (`.lua → 9026`, `.jar → 9025`, `.elf/.bin → 9021`).
+- New add-on option `js_port: 50000` (with schema entry), exported as `JS_PORT` env var and exposed via `/api/config` and the WebSocket config event.
+- Dedicated **JS** badge (green) and filter tab in the payload list.
+- Builder: `.js` steps show a green `Payload` label; ZIP autoload export marks `.js` steps as skipped (the PS5-side autoloader is ELF-only).
+- A complete Y2JB flow can now be built in the Auto-Load Builder: `?50000` → `lapse.js` → `?9021` → `etaHEN.bin`.
+
 ## [1.1.10] – 2026-05-22
 
 ### BD-UN-JB `.jar` Flow Steps: Actually Execute Now

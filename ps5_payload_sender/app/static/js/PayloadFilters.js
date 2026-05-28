@@ -7,6 +7,7 @@ const FILTER_DEFS = [
   { key: 'elf',       label: 'ELF'           },
   { key: 'lua',       label: 'LUA'           },
   { key: 'jar',       label: 'JAR'           },
+  { key: 'js',        label: 'JS'            },
 ];
 
 function renderPayloadFilters() {
@@ -42,6 +43,8 @@ function getFilteredPayloads() {
     pool = pool.filter(p => p.ext === '.lua');
   } else if (state.payloadFilter === 'jar') {
     pool = pool.filter(p => p.ext === '.jar');
+  } else if (state.payloadFilter === 'js') {
+    pool = pool.filter(p => p.ext === '.js');
   }
 
   // Apply search

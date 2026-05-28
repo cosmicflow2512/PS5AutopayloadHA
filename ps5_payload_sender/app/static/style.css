@@ -36,6 +36,7 @@
   --lua:       #f59e0b;
   --elf:       #60a5fa;
   --jar:       #a78bfa;
+  --js:        #34d399;
   --log-info:  #93c5fd;
   --log-ok:    #34d399;
   --log-err:   #f87171;
@@ -75,6 +76,7 @@
   --lua:       #b45309;
   --elf:       #2563eb;
   --jar:       #7c3aed;
+  --js:        #059669;
   --log-info:  #1d4ed8;
   --log-ok:    #065f46;
   --log-err:   #991b1b;
@@ -304,6 +306,7 @@ body {
 .badge-lua { background:rgba(245,158,11,.18); color:var(--lua) }
 .badge-elf { background:rgba(59,130,246,.18); color:var(--elf) }
 .badge-jar { background:rgba(167,139,250,.18); color:var(--jar) }
+.badge-js  { background:rgba(52,211,153,.18);  color:var(--js)  }
 .p-name { flex:1; font-size:.87rem; overflow-wrap:anywhere; line-height:1.35 }
 .p-meta { flex:1; font-size:.7rem; color:var(--dim); line-height:1.5 }
 .p-del {
@@ -439,6 +442,7 @@ body {
 .payload-label.lua  { background:rgba(245,158,11,.18); color:var(--lua) }
 .payload-label.elf  { background:rgba(59,130,246,.18); color:var(--elf) }
 .payload-label.jar  { background:rgba(167,139,250,.18); color:var(--jar) }
+.payload-label.js   { background:rgba(52,211,153,.18);  color:var(--js)  }
 .step-delay  { background:rgba(16,185,129,.15);  color:var(--green)   }
 .step-wait   { background:rgba(148,163,184,.15); color:var(--muted)   }
 .step-notify { background:rgba(99,102,241,.18);  color:var(--primary) }

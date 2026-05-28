@@ -12,6 +12,7 @@ Syntax (one directive per line):
   filename.elf [port]                – send payload (port optional)
   filename.bin [port]                – send payload (port optional, default ELF port)
   filename.jar [port]                – send payload (port optional, default BD-UN-JB port)
+  filename.js  [port]                – send payload (port optional, default Y2JB port 50000)
   !<ms>                              – delay in milliseconds
   ?<port>                            – wait until port is reachable (short wait)
   ?<port> <timeout_s>                – wait_port with custom timeout
@@ -85,7 +86,7 @@ Directive = Union[
 ]
 
 _PAYLOAD_RE = re.compile(
-    r'^(?P<name>.+?\.(lua|elf|bin|jar))\s*(?P<port>\d+)?$',
+    r'^(?P<name>.+?\.(lua|elf|bin|jar|js))\s*(?P<port>\d+)?$',
     re.IGNORECASE
 )
 

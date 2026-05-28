@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import payload_sender
-from payload_sender import DEFAULT_ELF_PORT, DEFAULT_LUA_PORT, get_payload_path, resolve_port
+from payload_sender import DEFAULT_ELF_PORT, DEFAULT_JS_PORT, DEFAULT_LUA_PORT, get_payload_path, resolve_port
 
 
 class TestResolvePort:
@@ -26,6 +26,12 @@ class TestResolvePort:
     def test_bin_routes_to_elf_port(self):
         # .bin files (e.g. etaHEN) are renamed ELF payloads — same loader port
         assert resolve_port("etaHEN.bin") == DEFAULT_ELF_PORT
+
+    def test_js_routes_to_js_port(self):
+        assert resolve_port("lapse.js") == DEFAULT_JS_PORT
+
+    def test_js_explicit_port_wins(self):
+        assert resolve_port("lapse.js", 12345) == 12345
 
     def test_unknown_extension_falls_back_to_elf(self):
         assert resolve_port("mystery.xyz") == DEFAULT_ELF_PORT
