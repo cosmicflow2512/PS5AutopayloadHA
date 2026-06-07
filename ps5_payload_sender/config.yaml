@@ -1,6 +1,6 @@
 name: PS5 Autopayload
 description: Manage and automate PS5 payload workflows from Home Assistant
-version: "1.1.11"
+version: "1.1.12"
 slug: ps5_payload_sender
 init: false
 arch:

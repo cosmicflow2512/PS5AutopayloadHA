@@ -197,3 +197,123 @@ def test_missing_source_config_still_checked(client, monkeypatch):
     c = TestClient(main.app)
     c.get("/api/sources/check-updates")
     assert called["n"] == 1
+
+
+# ── v1.1.12 fixes: cache invalidation + non-silent error reporting ──
+
+
+def test_check_updates_invalidates_tree_cache(client, monkeypatch):
+    """Check-Updates must drop the cached tree for each repo before
+    hitting GitHub, otherwise fresh pushes are invisible for up to
+    5 minutes (the in-memory cache TTL)."""
+    sources_router = client
+    monkeypatch.setattr(sources_router, "load_sources", lambda: [{
+        "repo": "Gezine/Luac0re", "source_type": "folder", "folder": "payloads",
+    }])
+    monkeypatch.setattr(sources_router, "load_payload_meta",
+                        lambda: {"poops_ps5.lua": {
+                            "repo": "Gezine/Luac0re", "asset": "poops_ps5.lua",
+                            "version": "latest", "sha": "aaaa1111",
+                        }})
+    monkeypatch.setattr(sources_router, "gh_scan_repo_files",
+                        lambda owner, repo, folder: [])
+    invalidated: list = []
+    monkeypatch.setattr(
+        sources_router, "gh_invalidate_cache",
+        lambda owner, repo: invalidated.append((owner, repo)),
+    )
+
+    import main
+    c = TestClient(main.app)
+    c.get("/api/sources/check-updates")
+    assert ("Gezine", "Luac0re") in invalidated
+
+
+def test_empty_releases_reports_error(client, monkeypatch):
+    """A release-mode source with zero releases used to be skipped
+    silently — the user saw nothing and couldn't tell whether the
+    check ran. It must now appear in errors[]."""
+    sources_router = client
+    monkeypatch.setattr(sources_router, "load_sources", lambda: [{
+        "repo": "Gezine/Luac0re", "source_type": "releases",
+    }])
+    monkeypatch.setattr(sources_router, "gh_get_releases", lambda *a: [])
+
+    import main
+    c = TestClient(main.app)
+    data = c.get("/api/sources/check-updates").json()
+    assert data["updates"] == []
+    assert any(
+        e.get("repo") == "Gezine/Luac0re" and "No releases" in e.get("error", "")
+        for e in data["errors"]
+    )
+
+
+def test_add_source_invalidates_tree_cache(client, monkeypatch):
+    """POST /api/sources (Re-scan / Add Source) must drop the cached
+    tree for the target repo before scanning so a fresh push to GitHub
+    is visible immediately, not 5 minutes later when the TTL expires."""
+    sources_router = client
+    monkeypatch.setattr(sources_router, "load_sources", lambda: [])
+    monkeypatch.setattr(sources_router, "save_sources",        lambda srcs: None)
+    monkeypatch.setattr(sources_router, "save_payload_meta",   lambda meta: None)
+    monkeypatch.setattr(sources_router, "load_payload_meta",   lambda: {})
+
+    invalidated: list = []
+    monkeypatch.setattr(
+        sources_router, "gh_invalidate_cache",
+        lambda owner, repo: invalidated.append((owner, repo)),
+    )
+    monkeypatch.setattr(sources_router, "gh_scan_repo_files",
+                        lambda owner, repo, folder=None: [{
+                            "asset_name":   "lapse.js",
+                            "tag":          "latest",
+                            "download_url": "https://raw/lapse",
+                            "path":         "payloads/lapse.js",
+                            "sha":          "deadbeef",
+                        }])
+
+    import main
+    c = TestClient(main.app)
+    r = c.post("/api/sources", json={
+        "repo": "Gezine/Y2JB", "source_type": "folder", "folder": "payloads",
+    })
+    assert r.status_code == 200
+    assert ("Gezine", "Y2JB") in invalidated, "cache must be invalidated before fetch"
+
+
+def test_asset_missing_from_release_window_reports_error(client, monkeypatch):
+    """When the meta's `asset` name is not in any of the last 30
+    releases (e.g. maintainer renamed the asset), report it instead
+    of silently continuing — the user can then re-scan to pick up
+    the new name."""
+    sources_router = client
+    monkeypatch.setattr(sources_router, "load_sources", lambda: [{
+        "repo": "Gezine/Luac0re", "source_type": "releases",
+    }])
+    monkeypatch.setattr(sources_router, "load_payload_meta",
+                        lambda: {"old_name.lua": {
+                            "repo": "Gezine/Luac0re", "asset": "old_name.lua",
+                            "version": "1.0",
+                        },
+                        "other.lua": {
+                            "repo": "Gezine/Luac0re", "asset": "other.lua",
+                            "version": "1.0",
+                        }})
+    # newest_release_assets has 2 entries → single_payload_repo=False
+    # path is taken, so asset_name lookup applies.
+    monkeypatch.setattr(sources_router, "gh_get_releases", lambda *a: [
+        {"asset_name": "new_name.lua", "tag": "2.0",
+         "download_url": "https://example/new.lua"},
+        {"asset_name": "extra.lua", "tag": "2.0",
+         "download_url": "https://example/extra.lua"},
+    ])
+
+    import main
+    c = TestClient(main.app)
+    data = c.get("/api/sources/check-updates").json()
+    # Both stored assets are missing from the release window → both
+    # should appear in errors with a clear message.
+    error_msgs = [e.get("error", "") for e in data["errors"]]
+    assert any("old_name.lua" in m and "not found" in m for m in error_msgs)
+    assert any("other.lua" in m and "not found" in m for m in error_msgs)
