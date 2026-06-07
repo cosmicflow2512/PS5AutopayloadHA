@@ -11,6 +11,7 @@ from exec_engine import executor
 from github_client import (
     get_releases as gh_get_releases,
     get_repo_folders as gh_get_repo_folders,
+    invalidate_cache as gh_invalidate_cache,
     scan_repo_files as gh_scan_repo_files,
 )
 from models import SourceAddRequest, SourceUpdateRequest
@@ -56,6 +57,12 @@ async def api_add_source(req: SourceAddRequest):
     if len(parts) != 2 or not all(p.strip() for p in parts):
         raise HTTPException(400, "Invalid repository format. Use 'owner/repo'")
     owner, repo_name = parts[0].strip(), parts[1].strip()
+
+    # Re-scan must read fresh data — drop any cached tree for this repo
+    # before hitting GitHub. Without this the 300 s tree cache would
+    # serve stale results and "Re-scan" would silently look like a no-op
+    # for up to 5 minutes after a maintainer pushes a new file.
+    gh_invalidate_cache(owner, repo_name)
 
     if req.source_type == "releases":
         assets = await _run_gh(gh_get_releases, owner, repo_name)
@@ -203,6 +210,12 @@ async def api_check_updates():
         # First time a file is seen without a stored SHA we silently
         # backfill the current SHA as baseline so the user doesn't
         # get a spurious "update" on the very first check.
+        # User-initiated check must read fresh data — drop any cached
+        # tree for this repo so Check-Updates sees newly pushed files
+        # immediately instead of waiting up to 5 minutes for the
+        # in-memory tree cache to expire.
+        gh_invalidate_cache(owner, repo_name)
+
         if src_cfg.get("source_type") == "folder":
             folder = src_cfg.get("folder") or None
             try:
@@ -252,6 +265,11 @@ async def api_check_updates():
             errors.append({"repo": slug, "error": str(exc)})
             continue
         if not assets:
+            # Surface this to the UI so the user knows the repo was
+            # checked and intentionally produced no result (instead of
+            # the previous silent skip that looked indistinguishable
+            # from "up to date").
+            errors.append({"repo": slug, "error": "No releases found"})
             continue
         latest_per_asset = {a["asset_name"]: a for a in reversed(assets)}
         newest_tag = assets[0]["tag"]
@@ -276,6 +294,15 @@ async def api_check_updates():
             else:
                 latest = latest_per_asset.get(asset_name)
             if not latest:
+                # The asset name we have on disk doesn't appear in the
+                # last 30 releases. Either the maintainer renamed the
+                # asset or it was retired. Report it instead of silently
+                # ignoring — the user can then re-scan to pick up the
+                # new name.
+                errors.append({
+                    "repo": slug,
+                    "error": f"{fname}: asset not found in last 30 releases",
+                })
                 continue
             if latest["tag"] != current:
                 updates.append({
