@@ -21,6 +21,7 @@ const state = {
   sources:          [],        // GitHub payload sources
   updateResults:    {},        // filename → {latest_version, download_url, ...}
   updateCheckDone:  false,     // true after first update check completes
+  isUpdating:       false,     // true while a switch-version batch is in flight
 };
 
 // Builder lives here so every module can access it

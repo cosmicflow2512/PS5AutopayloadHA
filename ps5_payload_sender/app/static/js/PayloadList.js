@@ -169,25 +169,42 @@ function buildPayloadItem(p) {
           const opt = document.createElement('option');
           opt.value               = v.tag;
           opt.textContent         = v.tag === p.source.latest_version ? `${v.tag} (latest)` : v.tag;
-          opt.dataset.downloadUrl = v.download_url;
+          opt.dataset.downloadUrl = v.download_url || '';
+          opt.dataset.sha         = v.sha || '';
           if (v.tag === p.source.version) opt.selected = true;
           verSel.appendChild(opt);
         });
         verSel.addEventListener('change', async () => {
           const newVer = verSel.value;
           if (newVer === p.source.version) return;
+          const opt = verSel.options[verSel.selectedIndex];
+          const downloadUrl = opt?.dataset.downloadUrl || '';
+          if (!downloadUrl) {
+            log(`Switch version: no download URL for ${newVer}`, 'error');
+            verSel.value = p.source.version;
+            return;
+          }
+          const prevVer = p.source.version;
+          verSel.disabled = true;
           try {
-            await api(`/api/payloads/${encodeURIComponent(p.name)}/set-default-version`, {
+            await api(`/api/payloads/${encodeURIComponent(p.name)}/switch-version`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ version: newVer }),
+              body: JSON.stringify({
+                repo:         p.source.repo,
+                asset_name:   p.source.asset || p.name,
+                download_url: downloadUrl,
+                version:      newVer,
+                sha:          opt?.dataset.sha || '',
+              }),
             });
-            p.source.version = newVer;
-            showToast(`Default → ${newVer}`);
-            renderPayloadList();
+            showToast(`Switched → ${newVer}`);
+            await refreshPayloads();
+            if (typeof checkAllUpdates === 'function') await checkAllUpdates();
           } catch (e) {
-            log('Set default version: ' + e.message, 'error');
-            verSel.value = p.source.version;
+            log('Switch version: ' + e.message, 'error');
+            verSel.value    = prevVer;
+            verSel.disabled = false;
           }
         });
         rowSrc.appendChild(verSel);
@@ -678,7 +695,7 @@ function _openUpdateUsagesDialog(p, stepMatches, usedInProfiles, flowDetails) {
     const total = savedChecked.length + allIdxs.length;
     showToast(`Updated ${total} usage${total !== 1 ? 's' : ''} to ${targetVer}`);
     overlay.remove();
-    renderPayloadList();
+    renderPayloads();
     if (typeof builderRenderList === 'function') builderRenderList();
   });
 
