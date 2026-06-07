@@ -137,7 +137,21 @@ async def api_add_source(req: SourceAddRequest):
 async def api_delete_source(owner: str, repo_name: str):
     slug = f"{owner}/{repo_name}"
     save_sources([s for s in load_sources() if s["repo"] != slug])
-    return {"success": True}
+
+    # Unlink any payload_meta entries that pointed at this source.
+    # We intentionally keep the binary on disk — the user may still
+    # want to use a payload they already downloaded even after removing
+    # the source. The meta cleanup just stops the UI from showing
+    # "update available" for a repo that's no longer tracked.
+    meta = load_payload_meta()
+    unlinked: list = []
+    for fname, m in list(meta.items()):
+        if m.get("repo") == slug:
+            del meta[fname]
+            unlinked.append(fname)
+    if unlinked:
+        save_payload_meta(meta)
+    return {"success": True, "orphans_unlinked": unlinked}
 
 
 @router.put("/api/sources/{owner}/{repo_name}")
