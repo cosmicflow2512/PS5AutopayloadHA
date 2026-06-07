@@ -485,6 +485,10 @@ async function importSelected() {
     document.getElementById('source-detected').style.display = 'none';
     document.getElementById('source-add-panel').style.display = 'none';
     await refreshPayloads();
+    // Clear any stale "update available" badge for the just-imported
+    // payloads — without this they keep showing as needing an update
+    // until the user manually clicks Check Updates again.
+    if (typeof checkAllUpdates === 'function') await checkAllUpdates();
   } else {
     btn.disabled = false;
     _updateDetectedSelectionUI();
@@ -527,6 +531,10 @@ async function checkSourceUpdates(repo, sourceEl) {
       myUpdates.forEach(u => { state.updateResults[u.filename] = u; });
       _renderUpdateBadge(Object.keys(state.updateResults).length);
       renderSourcesList();
+      // Mirror the release-source branch below — without this the
+      // payload list won't show the new update badges until the next
+      // full refresh.
+      renderPayloads();
       const freshEl    = document.querySelector(`.source-item[data-repo="${CSS.escape(repo)}"]`);
       const freshPanel = freshEl && freshEl.querySelector('.source-check-panel');
       if (freshPanel) {
@@ -730,10 +738,17 @@ function _populateSourceCheckPanel(panel, repo, newAssets, repoUpdates, imported
         .map(r => state.updateResults[r.dataset.filename])
         .filter(Boolean);
       if (!selected.length) return;
+      // Block concurrent apply runs. Without this, a click on the
+      // global Update All while a per-source apply is mid-flight would
+      // race on state.updateResults — the second loop sees `undefined`
+      // entries and silently no-ops.
+      if (state.isUpdating) { showToast('Update already in progress…'); return; }
+      state.isUpdating = true;
       applyBtn.disabled = true; applyBtn.textContent = 'Updating…';
 
       let done = 0;
       const failed = [];     // [{filename, message}]
+      try {
       for (const u of selected) {
         const row = updList.querySelector(
           `.source-update-row[data-filename="${CSS.escape(u.filename)}"]`,
@@ -810,6 +825,9 @@ function _populateSourceCheckPanel(panel, repo, newAssets, repoUpdates, imported
           err.textContent = f.message;
           row.appendChild(err);
         });
+      }
+      } finally {
+        state.isUpdating = false;
       }
     });
 
@@ -959,6 +977,9 @@ async function _importFromPanel(list, btn, panel) {
     showToast(`${imported} payload(s) imported`);
     panel.style.display = 'none';
     await refreshPayloads();
+    // Same as in importSelected(): drop any phantom update badges
+    // for the freshly imported payloads.
+    if (typeof checkAllUpdates === 'function') await checkAllUpdates();
   } else {
     btn.disabled = false;
   }
@@ -1091,26 +1112,36 @@ function _openUpdateSelectionDialog(updates) {
       .map(cb => state.updateResults[cb.dataset.filename])
       .filter(Boolean);
     if (!selected.length) return;
+    // Block concurrent apply runs (per-source panel can also drive
+    // switch-version) — see comment in checkSourceUpdates apply
+    // handler for the race we're guarding against.
+    if (state.isUpdating) { showToast('Update already in progress…'); return; }
+    state.isUpdating = true;
     applyBtn.disabled = true; cancelBtn.disabled = true;
     applyBtn.textContent = 'Updating…';
     let done = 0;
-    for (const u of selected) {
-      try {
-        await api(`/api/payloads/${encodeURIComponent(u.filename)}/switch-version`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            repo: u.repo, asset_name: u.asset_name,
-            download_url: u.download_url, version: u.latest_version,
-          }),
-        });
-        delete state.updateResults[u.filename];
-        done++;
-      } catch (e) { log(`Update '${u.filename}': ${e.message}`, 'error'); }
+    try {
+      for (const u of selected) {
+        try {
+          await api(`/api/payloads/${encodeURIComponent(u.filename)}/switch-version`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              repo: u.repo, asset_name: u.asset_name,
+              download_url: u.download_url, version: u.latest_version,
+              sha: u.sha || '',
+            }),
+          });
+          delete state.updateResults[u.filename];
+          done++;
+        } catch (e) { log(`Update '${u.filename}': ${e.message}`, 'error'); }
+      }
+      modal.remove();
+      showToast(`${done} payload(s) updated`);
+      await refreshPayloads();
+      await checkAllUpdates();
+    } finally {
+      state.isUpdating = false;
     }
-    modal.remove();
-    showToast(`${done} payload(s) updated`);
-    await refreshPayloads();
-    await checkAllUpdates();
   });
   btnRow.appendChild(cancelBtn);
   btnRow.appendChild(applyBtn);

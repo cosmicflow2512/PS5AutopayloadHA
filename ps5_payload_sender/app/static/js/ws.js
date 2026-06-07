@@ -48,6 +48,18 @@ function handleWS(msg) {
   if (msg.type === 'status') {
     log(msg.message, msg.level || 'info');
     handleBuilderStepStatus(msg);
+    // Auto-refresh the payload list when a server-side import or
+    // switch-version completes — without this, a second browser tab
+    // (or the HA mobile app sidebar) never sees the new payload until
+    // a full reload. Debounced so a burst of imports fires one refresh
+    // instead of N.
+    if (msg.level === 'success' && msg.message &&
+        (msg.message.includes('imported') || msg.message.includes('switched to'))) {
+      clearTimeout(handleWS._refreshTimer);
+      handleWS._refreshTimer = setTimeout(() => {
+        if (typeof refreshPayloads === 'function') refreshPayloads();
+      }, 500);
+    }
     return;
   }
   if (msg.type === 'flow_wait_check' || msg.type === 'flow_simulation') {

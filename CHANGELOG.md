@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [1.1.13] – 2026-06-07
+
+### Update Flow: Eight Follow-up Fixes
+
+v1.1.12 fixed the backend cache + release-window issues that made Check-Updates miss real updates. A follow-up audit then found eight more bugs in the surrounding flow — none of them headline failures on their own, but together they made the experience feel "off". All eight land here so the update flow can finally be shipped.
+
+**Frontend correctness**
+
+- The version dropdown in the payload list now actually switches the file on disk. Previously it called `set-default-version`, which only updated the meta `version` field — the underlying `.elf/.lua` binary stayed at whatever the last `switch-version` wrote. Picking an older entry from the dropdown now runs the full download + atomic write, mirroring the dedicated Update buttons.
+- The dropdown also no longer calls a non-existent `renderPayloadList()` (legacy name) — that JS error meant the row never re-rendered after a version change. Same rename in the "apply to flows" dialog.
+- After Import Selected (both the source-add and per-source-edit panels) the UI now runs Check Updates automatically. Without this the just-imported payload kept showing as "update available" until the user clicked Check manually.
+- After a folder-mode per-source Check the payload list is re-rendered. The release branch already did this; the folder branch now matches it so the "update available" pill appears immediately instead of only after a full reload.
+- A global `state.isUpdating` flag now blocks concurrent switch-version batches. Previously firing Update Selected and Update All in quick succession could leave the second batch silently no-op'ing because the first batch had already removed entries from `state.updateResults`.
+- WebSocket `status` messages for `imported` / `switched to` now trigger a debounced (500 ms) `refreshPayloads()`. A second open tab or the HA mobile sidebar reflects new payloads within a second instead of waiting for a manual reload.
+
+**Backend tightening**
+
+- `DELETE /api/sources/{owner}/{repo}` now unlinks orphaned `payload_meta.json` entries pointing at the deleted source. Binaries on disk are intentionally kept (the user may still want a payload they already downloaded), only the meta link is removed. The response includes `orphans_unlinked: [...]` so the UI can surface them.
+- `POST /api/payloads/{name}/set-default-version` now rejects (422) tags that are not in the payload's tracked `versions[]`. Legacy entries with no `versions[]` keep accepting any value to avoid regressing existing flows.
+
+**Tests**: 4 new (`test_set_default_version_rejects_unknown_tag`, `test_set_default_version_accepts_known_tag`, `test_set_default_version_legacy_empty_versions_accepts_any`, `test_delete_source_unlinks_orphan_meta`). Total suite: **148 passing**.
+
 ## [1.1.12] – 2026-06-07
 
 ### Update Flow: Four Root Causes Fixed

@@ -178,10 +178,23 @@ async def api_switch_version(filename: str, req: SwitchVersionRequest):
 
 @router.post("/api/payloads/{filename}/set-default-version")
 async def api_set_default_version(filename: str, req: SetDefaultVersionRequest):
+    """Update only the *active version* label in payload_meta.json
+    without touching the file on disk. The UI no longer uses this
+    endpoint (the version dropdown calls switch-version instead so the
+    binary actually changes) — kept here for JSON-API callers."""
     meta = load_payload_meta()
     safe = Path(filename).name
     if safe not in meta:
         raise HTTPException(404, "Payload not in metadata")
+    # Reject unknown tags so the meta record can't drift into a state
+    # where `version` doesn't match any entry in `versions[]`. Legacy
+    # entries with an empty versions list keep accepting anything so
+    # we don't regress existing flows.
+    tags = {v.get("tag") for v in meta[safe].get("versions", []) if v.get("tag")}
+    if tags and req.version not in tags:
+        raise HTTPException(
+            422, f"Version '{req.version}' is not tracked for {safe}",
+        )
     meta[safe]["version"] = req.version
     save_payload_meta(meta)
     return {"ok": True, "version": req.version}
