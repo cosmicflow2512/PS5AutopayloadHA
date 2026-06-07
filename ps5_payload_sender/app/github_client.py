@@ -159,15 +159,15 @@ def invalidate_cache(owner: str, repo: str) -> None:
 
 def get_releases(owner: str, repo: str) -> List[Dict[str, Any]]:
     """
-    Return .elf/.lua and .zip release assets for the last 3 releases.
+    Return .elf/.lua and .zip release assets for the last 30 releases.
     ZIP assets have is_zip=True; download_payload() handles extraction.
     Includes published_at and asset_updated_at for smart update detection.
     """
-    url = f"{GITHUB_API}/repos/{owner}/{repo}/releases?per_page=3"
+    url = f"{GITHUB_API}/repos/{owner}/{repo}/releases?per_page=30"
     releases = _gh_get(url)
 
     result: List[Dict[str, Any]] = []
-    for rel in releases[:3]:
+    for rel in releases[:30]:
         tag          = rel.get("tag_name", "")
         published_at = rel.get("published_at", "")
         release_id   = rel.get("id", 0)

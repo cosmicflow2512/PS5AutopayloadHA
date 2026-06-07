@@ -10,7 +10,10 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from atomic_write import atomic_write_bytes
 from config import ALLOWED_PAYLOAD_EXTENSIONS, HIDDEN_PROFILES, PAYLOAD_DIR, PROFILES_DIR
 from exec_engine import executor
-from github_client import download_payload as gh_download_payload
+from github_client import (
+    download_payload as gh_download_payload,
+    invalidate_cache as gh_invalidate_cache,
+)
 from models import (
     ImportPayloadRequest,
     SendRequest,
@@ -29,6 +32,15 @@ from storage import (
 from websocket_manager import manager
 
 router = APIRouter()
+
+
+def _invalidate_repo_cache(repo_slug: str) -> None:
+    """Drop the in-memory tree cache for ``owner/repo`` after a state
+    change (import / switch-version). Safe to call with any string —
+    a malformed slug is silently ignored."""
+    parts = (repo_slug or "").split("/")
+    if len(parts) == 2 and parts[0] and parts[1]:
+        gh_invalidate_cache(parts[0], parts[1])
 
 
 @router.get("/api/payloads")
@@ -118,6 +130,10 @@ async def api_import_payload(req: ImportPayloadRequest):
         "release_id":           req.release_id,
     }
     save_payload_meta(meta)
+    # Drop the cached tree so the next Check-Updates sees the newly
+    # imported version as current instead of still flagging it as
+    # an available update.
+    _invalidate_repo_cache(req.repo)
     await manager.status(f"'{safe}' imported from {req.repo} {req.version}", level="success")
     return {"success": True, "filename": safe, "size": len(data), "auto_port": resolve_port(safe)}
 
@@ -153,6 +169,9 @@ async def api_switch_version(filename: str, req: SwitchVersionRequest):
     if req.sha:
         meta[safe]["sha"] = req.sha
     save_payload_meta(meta)
+    # Drop the cached tree so the next Check-Updates compares against
+    # the just-switched version, not the previously-cached upstream.
+    _invalidate_repo_cache(req.repo)
     await manager.status(f"'{safe}' switched to {req.version}", level="success")
     return {"success": True, "filename": safe, "version": req.version, "backup_version": backup_version}
 

@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.1.12] – 2026-06-07
+
+### Update Flow: Four Root Causes Fixed
+
+Real-world testing of the update flow exposed four independent bugs that each made "Check Updates" or "Re-scan" behave unreliably. After a maintainer pushed a new payload or release the user would see one of three failure modes, depending on which bug was hit first: updates not detected, an update reported but the next check still flagged the just-imported version, or a clean source showing "no upstream version available". All four root causes are fixed here.
+
+- **Stale tree cache after Re-scan / Check-Updates.** The in-memory tree cache (`github_client._tree_cache`, 300 s TTL) was never invalidated. `invalidate_cache()` existed but had no callers. POST /api/sources (Re-scan / Add Source), GET /api/sources/check-updates, POST /api/payloads/import and POST /api/payloads/{filename}/switch-version now all drop the cached tree for the target repo before/after their state change. Fresh pushes to GitHub are visible immediately instead of up to 5 minutes later, and the second Check-Updates after a successful import now correctly reports "up to date".
+- **Release window too small.** `get_releases()` used `per_page=3`, so users more than 3 releases behind never saw any update. Raised to `per_page=30` (GitHub's default page size).
+- **Silent skip when a source has no releases.** Previously `if not assets: continue` made an empty release feed indistinguishable from "up to date". Now reported as `errors: [{repo, error: "No releases found"}]` so the UI can surface it.
+- **Silent skip when the stored asset name isn't in the release window.** If a maintainer renamed the asset (or it falls outside the 30-release window) the meta entry was silently dropped from the check. Now reported as `errors: [{repo, error: "<file>: asset not found in last 30 releases"}]` so the user knows a re-scan is needed.
+
+Four new tests in `test_check_updates_source_type.py` lock in the new behaviour (`test_check_updates_invalidates_tree_cache`, `test_empty_releases_reports_error`, `test_asset_missing_from_release_window_reports_error`, `test_add_source_invalidates_tree_cache`). Full suite: 144 tests green.
+
 ## [1.1.11] – 2026-05-28
 
 ### Y2JB Support: `.js` Payloads on Port 50000
