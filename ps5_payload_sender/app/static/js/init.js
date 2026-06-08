@@ -136,6 +136,7 @@ async function init() {
   initCollapsible();
   if (typeof initFlowNotify === 'function') await initFlowNotify();
   connectWS();
+  if (typeof initTracer === 'function') initTracer();
   // Non-blocking update check on startup (doesn't delay page load)
   if (state.sources.length) checkAllUpdates();
 }

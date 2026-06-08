@@ -7,6 +7,8 @@ function _ts() {
   return new Date().toLocaleTimeString('en-GB', { hour12: false });
 }
 
+function dtrace(msg) { log(msg, 'trace'); }
+
 function log(msg, level = 'info') {
   _logHistory.push({ ts: _ts(), msg, level });
   if (_logHistory.length > 500) _logHistory.shift();
@@ -37,6 +39,7 @@ function _matchesFilter(e, f) {
   if (f === 'all')     return true;
   if (f === 'port')    return /port/i.test(e.msg);
   if (f === 'payload') return /send|payload|import/i.test(e.msg);
+  if (f === 'trace')   return e.level === 'trace';
   return true;
 }
 
