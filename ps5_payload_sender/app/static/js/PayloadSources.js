@@ -520,6 +520,7 @@ async function checkSourceUpdates(repo, sourceEl) {
   // configured folder) and report the result for this repo.
   const srcCfg = (state.sources || []).find(s => s.repo === repo);
   if (srcCfg && srcCfg.source_type === 'folder') {
+    if (state.advancedMode) dtrace('checkSourceUpdates("' + repo + '") — source_type: folder (SHA-based)');
     try {
       const data = await api('/api/sources/check-updates');
       const myUpdates = (data.updates || []).filter(u => u.repo === repo);
@@ -529,6 +530,11 @@ async function checkSourceUpdates(repo, sourceEl) {
         .filter(k => state.updateResults[k].repo === repo)
         .forEach(k => delete state.updateResults[k]);
       myUpdates.forEach(u => { state.updateResults[u.filename] = u; });
+      if (state.advancedMode) {
+        dtrace('checkSourceUpdates("' + repo + '") folder result: ' + myUpdates.length + ' update(s)');
+        myUpdates.forEach(u => dtrace('  UPDATE ' + u.filename + ': SHA ' + u.current_version + ' → ' + u.latest_version));
+        if (!myUpdates.length) dtrace('  (all folder files match their upstream SHA)');
+      }
       _renderUpdateBadge(Object.keys(state.updateResults).length);
       renderSourcesList();
       // Mirror the release-source branch below — without this the
@@ -553,6 +559,7 @@ async function checkSourceUpdates(repo, sourceEl) {
     return;
   }
 
+  if (state.advancedMode) dtrace('checkSourceUpdates("' + repo + '") — source_type: release');
   try {
     const data = await api(`/api/sources/releases?repo=${encodeURIComponent(repo)}`);
 
@@ -569,6 +576,15 @@ async function checkSourceUpdates(repo, sourceEl) {
     const owned          = state.payloads.filter(p => p.source && p.source.repo === repo);
     const importedAssets = new Set(owned.map(p => p.source.asset));
     const usedAsUpdate   = new Set();
+
+    if (state.advancedMode) {
+      dtrace('  Release assets from GitHub: ' + data.releases.length + ' (newest tag: ' + (newestTag || 'none') + ')');
+      dtrace('  Imported payloads from this repo: ' + owned.length + (owned.length ? ' [' + owned.map(p => p.name).join(', ') + ']' : ''));
+      const allAssetNames = Object.keys(byAsset);
+      const newNames = allAssetNames.filter(n => !importedAssets.has(n));
+      if (newNames.length)
+        dtrace('  New (not yet imported): ' + newNames.join(', ') + ' — these do NOT appear in global Check Updates');
+    }
 
     if (!state.updateResults) state.updateResults = {};
     // Drop any stale entries for this repo so a payload that was
@@ -612,6 +628,12 @@ async function checkSourceUpdates(repo, sourceEl) {
     const newAssets = Object.entries(byAsset)
       .filter(([name]) => !importedAssets.has(name) && !usedAsUpdate.has(name))
       .map(([name, vers]) => ({ name, latest: vers[0], versions: vers }));
+    if (state.advancedMode) {
+      dtrace('checkSourceUpdates("' + repo + '") result: ' + updatesAvail + ' update(s), ' + newAssets.length + ' new');
+      Object.values(state.updateResults).filter(u => u.repo === repo).forEach(u =>
+        dtrace('  UPDATE ' + u.filename + ': ' + u.current_version + ' → ' + u.latest_version));
+      newAssets.forEach(a => dtrace('  NEW ' + a.name + ' (latest: ' + a.latest.tag + ') — import via per-source panel'));
+    }
     _renderUpdateBadge(Object.keys(state.updateResults).length);
     // renderSourcesList() rebuilds .source-item nodes, so the panel reference
     // captured above would be detached after it runs. Re-query the freshly
@@ -988,6 +1010,11 @@ async function _importFromPanel(list, btn, panel) {
 // ── Global update check ──────────────────────────────────────────
 async function checkAllUpdates() {
   if (!state.sources.length) return;
+  if (state.advancedMode) {
+    dtrace('checkAllUpdates() — ' + state.sources.length + ' source(s) configured');
+    dtrace('  NOTE: global check only finds updates for already-imported payloads.');
+    dtrace('  To discover new payloads, use the per-source "Check" button instead.');
+  }
   const btn = document.getElementById('btn-check-all-updates');
   if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
   try {
@@ -999,6 +1026,15 @@ async function checkAllUpdates() {
     _renderUpdateBadge(data.updates.length);
     renderSourcesList();
     renderPayloads();
+    if (state.advancedMode) {
+      dtrace('checkAllUpdates() result: ' + data.updates.length + ' update(s), ' + (data.errors || []).length + ' error(s)');
+      (data.updates || []).forEach(u =>
+        dtrace('  UPDATE ' + u.filename + ': ' + u.current_version + ' → ' + u.latest_version + ' [' + u.repo + ']'));
+      (data.errors || []).forEach(e =>
+        dtrace('  ERROR ' + e.repo + ': ' + e.error));
+      if (!data.updates.length && !(data.errors || []).length)
+        dtrace('  (all tracked payloads are up to date, or no payloads have been imported yet)');
+    }
     (data.errors || []).forEach(e => log(`Check '${e.repo}': ${e.error}`, 'warn'));
     if (data.errors && data.errors.length) {
       showToast(`${data.updates.length} update(s) · ${data.errors.length} repo(s) failed — see log`);

@@ -6,7 +6,7 @@
 
 ### Fully Automated PS5 Payload Execution via Home Assistant
 
-[![Version](https://img.shields.io/badge/version-1.1.13-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
+[![Version](https://img.shields.io/badge/version-1.1.14-blue?style=flat-square)](https://github.com/cosmicflow2512/PS5AutopayloadHA)
 [![HA](https://img.shields.io/badge/Home%20Assistant-Add--on-41BDF5?style=flat-square&logo=home-assistant)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
@@ -367,5 +367,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <div align="center">
-  <sub>Built for Home Assistant · Tested on HA OS · v1.1.13</sub>
+  <sub>Built for Home Assistant · Tested on HA OS · v1.1.14</sub>
 </div>

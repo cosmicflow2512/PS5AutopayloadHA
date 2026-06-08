@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [1.1.14] – 2026-06-08
+
+### Debug Tracer in Advanced Mode
+
+Added a **Debug Tracer** to the Execution Log (Advanced Mode) so the update flow can be inspected step by step.
+
+**How to use**
+
+1. Enable **Advanced Mode** (top-right toggle).
+2. Open the **Execution Log** section.
+3. Change the filter dropdown to **Trace**.
+4. Click **Check Updates** (global) or the per-source **Check** button.
+
+The trace will show exactly which repos and payloads were inspected, what was compared, and why a payload was — or was not — flagged as having an update.
+
+**What the trace explains**
+
+- Global **Check Updates** only inspects payloads that have already been imported. If a payload from a source has never been imported, the global check cannot see it — it is simply not in the metadata. This is by design: the global check is an *update* checker, not a *discovery* scanner.
+- The per-source **Check** button scans all release assets from GitHub, including ones that were never imported. That is why it can report "1 new payload found" while the global check reports "all up to date" — the payload is genuinely new, not an update.
+- The trace labels new (not-yet-imported) assets as `NEW` and existing tracked updates as `UPDATE`, making this distinction explicit.
+
+**What was added**
+
+- `DebugTracer.js` — wraps the global `api()` function when Advanced Mode is on, logging every HTTP call (method, URL, timing, response summary) at trace level. Also logs named button clicks via document-level event delegation.
+- `dtrace()` helper in `StatusLog.js` (shorthand for `log(msg, 'trace')`).
+- "Trace" filter option in the Execution Log dropdown — shows only trace-level entries.
+- Verbose trace calls in `checkAllUpdates()` and `checkSourceUpdates()` describing repos checked, assets found, updates/new payloads detected, and why global vs per-source results differ.
+- `.log-trace` CSS class (indigo, slightly smaller) to visually distinguish trace entries from info/warn/error.
+
 ## [1.1.13] – 2026-06-07
 
 ### Update Flow: Eight Follow-up Fixes

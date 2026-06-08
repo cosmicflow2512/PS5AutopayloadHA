@@ -41,6 +41,7 @@
   --log-ok:    #34d399;
   --log-err:   #f87171;
   --log-warn:  #fbbf24;
+  --log-trace: #a5b4fc;
   --ed-bg:     #0a0c12;
   --shadow:    0 1px 0 rgba(255,255,255,.02) inset, 0 1px 2px rgba(0,0,0,.4);
   --shadow-lg: 0 6px 24px rgba(0,0,0,.30);
@@ -81,6 +82,7 @@
   --log-ok:    #065f46;
   --log-err:   #991b1b;
   --log-warn:  #92400e;
+  --log-trace: #4338ca;
   --ed-bg:     #f8fafc;
   --shadow:    0 1px 0 rgba(255,255,255,.6) inset, 0 1px 2px rgba(15,23,42,.06);
   --shadow-lg: 0 8px 24px rgba(15,23,42,.10);
@@ -361,6 +363,7 @@ body {
 .log-success { color:var(--log-ok);  background:rgba(52,211,153,.06) }
 .log-error   { color:var(--log-err); background:rgba(248,113,113,.07) }
 .log-warn    { color:var(--log-warn) }
+.log-trace   { color:var(--log-trace); opacity:.85; font-size:.8em }
 
 /* ---- Empty state ---- */
 .empty-state { text-align:center; color:var(--dim); font-size:.82rem; padding:1.1rem 0 }
