@@ -4,25 +4,25 @@
 
 ## [1.1.15] – 2026-06-19
 
-### FTP Upload für Autoload-Dateien
+### FTP Upload for Autoload Files
 
-Statt `autoload.zip` herunterzuladen und auf einen USB-Stick zu entpacken, können Autoload-Dateien jetzt direkt per FTP auf die PS5 hochgeladen werden.
+Instead of downloading `autoload.zip` and copying it to a USB stick, autoload files can now be uploaded directly to the PS5 via FTP.
 
-**Voraussetzung:** `ftpsrv.elf` läuft auf der PS5 (Standard-Port: 2121, keine Authentifizierung).
+**Requirement:** `ftpsrv.elf` must be running on the PS5 (default port: 2121, no authentication required).
 
-**So funktioniert es:**
+**How to use:**
 
-Im Auto-Load Builder gibt es unterhalb des "Export autoload.zip"-Buttons jetzt den Bereich **FTP Upload (ftpsrv)**:
+A new **FTP Upload (ftpsrv)** section appears below the "Export autoload.zip" button in the Auto-Load Builder:
 
-1. PS5-IP im FTP-Feld eingeben (wird beim Start automatisch aus der konfigurierten PS5-IP übernommen)
-2. Zielverzeichnis anpassen (Standard: `/mnt/usb0/ps5_autoloader/`)
-3. **⬆ FTP** klicken
+1. Enter the PS5 IP in the FTP field (auto-filled from the configured PS5 IP on startup)
+2. Adjust the remote path if needed (default: `/mnt/usb0/ps5_autoloader/`)
+3. Click **⬆ FTP**
 
-Der Add-on verbindet sich über `ftplib` (Python-Standardbibliothek) mit der PS5, erstellt das Verzeichnis falls nötig, und lädt `autoload.txt` sowie alle ELF/BIN-Payloads direkt hoch. Der Fortschritt erscheint im Execution Log.
+The add-on connects via `ftplib` (Python standard library — no new dependency), creates the directory if it does not exist, and uploads `autoload.txt` along with all ELF/BIN payloads. Progress appears in the Execution Log.
 
-IP und Pfad werden gespeichert und bei Neustart wiederhergestellt.
+IP and path are saved and restored across restarts.
 
-**Neu in `config.yaml`:** `ftp_port: 2121` — der FTP-Port kann bei Bedarf in den Add-on-Einstellungen geändert werden.
+**New `config.yaml` option:** `ftp_port: 2121` — the FTP port can be changed in the add-on settings if needed.
 
 ## [1.1.14] – 2026-06-08
 
