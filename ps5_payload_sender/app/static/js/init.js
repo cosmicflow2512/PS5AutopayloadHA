@@ -113,6 +113,10 @@ async function init() {
   // Boot sequence
   await loadDevicesFromServer();
   await loadPersistedState();
+  // Pre-fill FTP host from PS5 IP if not saved separately
+  const _ftpHostEl = document.getElementById('ftp-host-input');
+  if (_ftpHostEl && !_ftpHostEl.value)
+    _ftpHostEl.value = document.getElementById('ps5-ip').value.trim();
   await refreshSources();
   updateSourcesSummary();
   try {

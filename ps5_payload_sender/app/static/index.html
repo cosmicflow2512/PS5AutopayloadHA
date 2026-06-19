@@ -442,6 +442,19 @@
             title="Export as autoload.zip — extract to USB root for PS5 autoloaders">
             ⬇ Export autoload.zip (USB)
           </button>
+          <div style="margin-top:.5rem">
+            <label class="field-label" style="margin-bottom:.25rem;display:block">FTP Upload (ftpsrv)</label>
+            <div style="display:flex;gap:.4rem">
+              <input type="text" id="ftp-host-input" class="input" style="width:9.5rem;font-size:.8rem"
+                placeholder="192.168.x.x" title="PS5 IP for FTP (ftpsrv)" />
+              <input type="text" id="ftp-path-input" class="input" style="flex:1;font-size:.8rem"
+                placeholder="/mnt/usb0/ps5_autoloader/" title="Remote directory on PS5" />
+              <button onclick="sendAutoloadViaFtp()" class="btn btn-sm"
+                title="Upload autoload.txt + ELF payloads directly to PS5 via FTP (ftpsrv, port 2121)">
+                ⬆ FTP
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Recent flow runs -->

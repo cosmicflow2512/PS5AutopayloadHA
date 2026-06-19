@@ -10,6 +10,7 @@ PORT_CHECK_TIMEOUT: float = float(os.environ.get("PORT_CHECK_TIMEOUT", 10))
 PORT_CHECK_INTERVAL: float = float(int(os.environ.get("PORT_CHECK_INTERVAL", 500)) / 1000)
 SUPERVISOR_TOKEN: str = os.environ.get("SUPERVISOR_TOKEN", "")
 GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+FTP_PORT: int = int(os.environ.get("FTP_PORT", 2121))
 
 # ── Paths ─────────────────────────────────────────────────────────
 APP_DIR    = Path("/app")
@@ -29,7 +30,7 @@ OLD_STATE_FILE   = Path("/data/state.json")
 OLD_DEVICES_FILE = Path("/data/devices.json")
 
 # ── Misc ──────────────────────────────────────────────────────────
-APP_VERSION = "1.1.14"
+APP_VERSION = "1.1.15"
 MAX_PAYLOAD_VERSIONS  = 5     # versions kept per payload
 MAX_TIMING_ENTRIES    = 10    # timing samples kept per port
 MAX_LOG_ENTRIES       = 500   # log entries kept in history

@@ -22,6 +22,8 @@ const state = {
   updateResults:    {},        // filename → {latest_version, download_url, ...}
   updateCheckDone:  false,     // true after first update check completes
   isUpdating:       false,     // true while a switch-version batch is in flight
+  ftpHost:          '',        // FTP host for autoload upload (empty = use PS5 IP)
+  ftpPath:          '/mnt/usb0/ps5_autoloader/',
 };
 
 // Builder lives here so every module can access it
@@ -146,6 +148,8 @@ async function persistState() {
         // settings across reloads, just like builder_steps.
         flow_notify_config:   typeof flowNotifyReadConfig === 'function'
                                 ? flowNotifyReadConfig() : null,
+        ftp_host:             state.ftpHost,
+        ftp_path:             state.ftpPath,
       }),
     });
   } catch (_) { /* silent */ }
@@ -175,6 +179,16 @@ async function loadPersistedState() {
       document.getElementById('builder-profile-name').value = saved.builder_profile_name;
     if (saved.flow_notify_config && typeof flowNotifyApplyConfig === 'function')
       flowNotifyApplyConfig(saved.flow_notify_config);
+    if (saved.ftp_host !== undefined) {
+      state.ftpHost = saved.ftp_host || '';
+      const hi = document.getElementById('ftp-host-input');
+      if (hi) hi.value = state.ftpHost;
+    }
+    if (saved.ftp_path) {
+      state.ftpPath = saved.ftp_path;
+      const pi = document.getElementById('ftp-path-input');
+      if (pi) pi.value = state.ftpPath;
+    }
   } catch (_) { /* first run */ }
 }
 

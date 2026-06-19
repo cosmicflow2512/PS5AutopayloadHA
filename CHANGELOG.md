@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [1.1.15] – 2026-06-19
+
+### FTP Upload for Autoload Files
+
+Instead of downloading `autoload.zip` and copying it to a USB stick, autoload files can now be uploaded directly to the PS5 via FTP.
+
+**Requirement:** `ftpsrv.elf` must be running on the PS5 (default port: 2121, no authentication required).
+
+**How to use:**
+
+A new **FTP Upload (ftpsrv)** section appears below the "Export autoload.zip" button in the Auto-Load Builder:
+
+1. Enter the PS5 IP in the FTP field (auto-filled from the configured PS5 IP on startup)
+2. Adjust the remote path if needed (default: `/mnt/usb0/ps5_autoloader/`)
+3. Click **⬆ FTP**
+
+The add-on connects via `ftplib` (Python standard library — no new dependency), creates the directory if it does not exist, and uploads `autoload.txt` along with all ELF/BIN payloads. Progress appears in the Execution Log.
+
+IP and path are saved and restored across restarts.
+
+**New `config.yaml` option:** `ftp_port: 2121` — the FTP port can be changed in the add-on settings if needed.
+
 ## [1.1.14] – 2026-06-08
 
 ### Debug Tracer in Advanced Mode
