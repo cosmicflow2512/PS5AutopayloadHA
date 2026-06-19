@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import ftplib
 import io
 import zipfile
 from pathlib import Path
@@ -20,6 +21,7 @@ from autoload_parser import (
     parse_version_pins,
     set_version_pin,
 )
+import config
 from config import PAYLOAD_DIR, PROFILES_DIR
 from exec_engine import (
     ExecState,
@@ -173,6 +175,61 @@ async def api_export_autoload_zip(request: Request):
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="autoload.zip"'},
     )
+
+
+@router.post("/api/autoload/ftp-upload")
+async def api_ftp_upload(request: Request):
+    """Upload autoload.txt + ELF payloads directly to the PS5 via FTP (ftpsrv)."""
+    data         = await request.json()
+    autoload_txt = data.get("autoload_txt", "")
+    payloads     = data.get("payloads", [])
+    host         = (data.get("host") or config.HOST or "").strip()
+    ftp_port     = int(data.get("ftp_port", config.FTP_PORT))
+    raw_path     = data.get("ftp_path") or "/mnt/usb0/ps5_autoloader/"
+    ftp_path     = raw_path.rstrip("/") + "/"
+
+    if not host:
+        raise HTTPException(400, "PS5 IP not configured")
+
+    def _upload() -> list[str]:
+        with ftplib.FTP() as ftp:
+            ftp.connect(host, ftp_port, timeout=15)
+            ftp.login()
+            ftp.set_pasv(True)
+
+            # mkdir -p — ignore "already exists" errors
+            parts = ftp_path.strip("/").split("/")
+            cur = "/"
+            for part in parts:
+                cur = cur.rstrip("/") + "/" + part
+                try:
+                    ftp.mkd(cur)
+                except ftplib.error_perm:
+                    pass
+            ftp.cwd(ftp_path)
+
+            uploaded: list[str] = []
+            ftp.storlines("STOR autoload.txt", io.BytesIO(autoload_txt.encode()))
+            uploaded.append("autoload.txt")
+
+            for fname in payloads:
+                safe = Path(fname).name
+                p    = PAYLOAD_DIR / safe
+                if p.exists() and p.is_file():
+                    with open(p, "rb") as f:
+                        ftp.storbinary(f"STOR {safe}", f)
+                    uploaded.append(safe)
+
+        return uploaded
+
+    loop = asyncio.get_running_loop()
+    try:
+        uploaded = await loop.run_in_executor(executor, _upload)
+        return {"success": True, "uploaded": uploaded}
+    except ftplib.all_errors as exc:
+        raise HTTPException(502, f"FTP error: {exc}") from exc
+    except OSError as exc:
+        raise HTTPException(502, f"Connection failed: {exc}") from exc
 
 
 @router.get("/api/autoload/state")

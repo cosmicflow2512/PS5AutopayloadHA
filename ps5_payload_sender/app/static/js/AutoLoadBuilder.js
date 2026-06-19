@@ -822,6 +822,69 @@ async function exportAutoloadZip() {
   }
 }
 
+// ── FTP Upload to PS5 (ftpsrv) ────────────────────────────────────
+async function sendAutoloadViaFtp() {
+  if (!builder.steps.length) { alert('No steps to export!'); return; }
+
+  const lines    = [];
+  const payloads = [];
+  const warnings = [];
+
+  for (const step of builder.steps) {
+    if (step.type === 'delay') {
+      lines.push(`!${step.ms}`);
+    } else if (step.type === 'wait_port') {
+      warnings.push(`WAIT port ${step.port} (not supported by autoloader)`);
+    } else if (step.type === 'payload') {
+      const fn = step.filename.toLowerCase();
+      if (fn.endsWith('.lua')) {
+        warnings.push(`Lua payload ${step.filename} (skipped)`);
+      } else if (fn.endsWith('.jar')) {
+        warnings.push(`JAR payload ${step.filename} (skipped — BD-UN-JB cannot be autoloaded)`);
+      } else if (fn.endsWith('.js')) {
+        warnings.push(`JS payload ${step.filename} (skipped — Y2JB WebKit-stage cannot be autoloaded)`);
+      } else {
+        lines.push(step.filename);
+        payloads.push(step.filename);
+      }
+    }
+  }
+
+  if (!payloads.length) {
+    alert('No exportable payloads in the builder.\nAdd at least one ELF payload.');
+    return;
+  }
+
+  const ftpHost = (document.getElementById('ftp-host-input')?.value || '').trim()
+               || document.getElementById('ps5-ip')?.value.trim() || '';
+  const ftpPath = (document.getElementById('ftp-path-input')?.value || '').trim()
+               || state.ftpPath || '/mnt/usb0/ps5_autoloader/';
+
+  if (!ftpHost) { alert('Please enter a PS5 IP address for FTP!'); return; }
+
+  // Persist settings
+  state.ftpHost = document.getElementById('ftp-host-input')?.value.trim() || '';
+  state.ftpPath = ftpPath;
+  scheduleSave();
+
+  if (warnings.length) {
+    log('FTP upload — some steps skipped:\n' + warnings.map(w => '  • ' + w).join('\n'), 'warn');
+  }
+
+  log(`FTP upload → ${ftpHost}:2121${ftpPath} …`);
+  try {
+    const data = await api('/api/autoload/ftp-upload', {
+      method: 'POST',
+      body: { autoload_txt: lines.join('\n') + '\n', payloads, host: ftpHost, ftp_path: ftpPath },
+    });
+    log('FTP upload OK — ' + data.uploaded.join(', '), 'success');
+    showToast('FTP upload done ✓');
+  } catch (e) {
+    log('FTP upload: ' + e.message, 'error');
+    showToast('FTP upload failed — see log');
+  }
+}
+
 async function builderRunDirect() {
   if (!builder.steps.length) { alert('No steps to run!'); return; }
   const host = getHost(); if (!host) return;
